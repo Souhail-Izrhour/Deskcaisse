@@ -1,0 +1,509 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('tenants', function (Blueprint $table) {
+
+            $table->id();
+
+            // ========================
+            // Identité publique & contact
+            // ========================
+            $table->string('public_id', 10)->unique(); // ID public pour API/URL
+            $table->string('nom', 150);                 // Nom du café / organisation
+            $table->string('email', 150)->nullable();   // Email de contact
+            $table->string('telephone', 30)->nullable();
+            $table->string('adresse')->nullable();
+
+            // ========================
+            // Branding & tickets
+            // ========================
+            $table->string('logo')->nullable();
+            $table->string('ticket_footer_message', 255)->nullable();
+            $table->string('currency', 3)->default('MAD');
+            $table->string('language', 5)->default('fr'); 
+            $table->boolean('show_logo_on_ticket')->default(true);
+            $table->enum('ticket_type', ['normal', 'double'])->default('normal');
+
+            // ========================
+            // Statut
+            // ========================
+            $table->boolean('is_active')->default(true);
+
+            // ========================
+            // Audit & cycle de vie
+            // ========================
+            $table->timestamps();
+            $table->softDeletes();
+
+            // ========================
+            // Index pour filtre rapide
+            // ========================
+            $table->index('is_active');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('tenants');
+    }
+};
+
+-----------------------------
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('users', function (Blueprint $table) {
+
+            $table->id();
+
+            // ========================
+            // Multi-tenant
+            // ========================
+            $table->foreignId('tenant_id')
+                  ->constrained()
+                  ->cascadeOnDelete();
+
+            // ========================
+            // Identité utilisateur
+            // ========================
+            $table->string('nom', 100);
+            $table->string('prenom', 100);
+            $table->string('email', 150);
+
+            // ========================
+            // Rôle & statut
+            // ========================
+            $table->string('role', 30)->default('serveur');
+            $table->boolean('is_active')->default(true);
+
+            // ========================
+            // Sécurité
+            // ========================
+            $table->string('password');
+            $table->rememberToken();
+
+            // ========================
+            // Audit & cycle de vie
+            // ========================
+            $table->timestamps();
+            $table->softDeletes();
+
+            // ========================
+            // Contraintes
+            // ========================
+            $table->unique(['tenant_id', 'email']);
+            $table->index(['tenant_id', 'role']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('users');
+    }
+};
+
+-----------------------
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('categories', function (Blueprint $table) {
+            $table->id();
+
+            // Multi-tenant
+            $table->foreignId('tenant_id')
+                  ->constrained('tenants')
+                  ->cascadeOnDelete();
+
+            // Nom et image
+            $table->string('name', 100);
+            $table->string('image')->nullable();
+
+            // Audit & soft delete
+            $table->timestamps();
+            $table->softDeletes(); 
+
+            // Contraintes
+            $table->unique(['tenant_id', 'name']); 
+            $table->index('tenant_id');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('categories');
+    }
+};
+
+
+-----------------------
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('products', function (Blueprint $table) {
+            $table->id();
+
+            // ========================
+            // Multi-tenant
+            // ========================
+            $table->foreignId('tenant_id')
+                  ->constrained('tenants')
+                  ->cascadeOnDelete();
+
+            // ========================
+            // Catégorie obligatoire
+            // ========================
+            $table->foreignId('category_id')
+                  ->constrained('categories')
+                  ->cascadeOnDelete();
+
+            // ========================
+            // Informations produit
+            // ========================
+            $table->string('name', 150);
+            $table->string('image')->nullable();
+            $table->decimal('price', 8, 2);
+            $table->integer('stock')->default(0); // quantité en stock
+            $table->string('barcode', 50)->nullable(); // code-barres du produit
+
+
+            // ========================
+            // Audit & soft delete
+            // ========================
+            $table->timestamps();
+            $table->softDeletes(); // permet de supprimer/restaurer le produit individuellement
+
+            // ========================
+            // Contraintes & index
+            // ========================
+            $table->unique(['tenant_id', 'name']); // unicité par café
+            $table->unique(['tenant_id', 'barcode']); // unicité par café
+
+            $table->index(['tenant_id', 'category_id']); // recherche rapide par café/catégorie
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('products');
+    }
+};
+
+
+----------------------
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('shifts', function (Blueprint $table) {
+            $table->id();
+
+            // ========================
+            // Multi-tenant & utilisateur
+            // ========================
+            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
+
+            // ========================
+            // Horaires du shift
+            // ========================
+            $table->timestamp('started_at'); 
+            $table->timestamp('ended_at')->nullable(); 
+
+            // ========================
+            // Chiffres du shift
+            // ========================
+            $table->decimal('ventes', 10, 2)->default(0);  
+            $table->decimal('charges', 10, 2)->default(0); 
+            $table->decimal('net', 10, 2)->default(0);    
+
+            // ========================
+            // Audit & soft delete
+            // ========================
+            $table->timestamps();
+            $table->softDeletes(); // permet de masquer un shift sans le supprimer physiquement
+
+            // ========================
+            // Index pour recherches rapides
+            // ========================
+            $table->index(['tenant_id', 'user_id']);
+            $table->index(['started_at']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('shifts');
+    }
+};
+
+
+----------------------
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('orders', function (Blueprint $table) {
+            $table->id();
+
+            // ========================
+            // Multi-tenant & utilisateur
+            // ========================
+            $table->foreignId('tenant_id')->constrained()->cascadeOnDelete(); // le café concerné
+            $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete(); // le serveur qui a pris la commande
+            $table->foreignId('shift_id')->nullable()->constrained()->nullOnDelete(); // le shift correspondant
+
+            // ========================
+            // Informations de la commande
+            // ========================
+            $table->decimal('totalOrder', 8, 2); // total de la commande
+            $table->enum('status', ['en_attente', 'payée', 'annulée'])->default('en_attente'); // statut de la commande
+            $table->enum('payment_method', ['espèce', 'carte', 'mobile', 'autre'])->nullable();
+
+
+            // ========================
+            // Audit & soft delete
+            // ========================
+            $table->timestamps();
+            $table->softDeletes(); // permet de masquer la commande sans la supprimer physiquement
+
+            // ========================
+            // Index pour recherches rapides
+            // ========================
+            $table->index(['tenant_id', 'user_id']);
+            $table->index(['shift_id']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('orders');
+    }
+};
+
+
+--------------------
+
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('order_items', function (Blueprint $table) {
+            $table->id();
+
+            // ========================
+            // Multi-tenant
+            // ========================
+            $table->foreignId('tenant_id')
+                  ->constrained()
+                  ->cascadeOnDelete(); // cascade si le tenant est supprimé
+
+            // ========================
+            // Clé étrangère vers la commande
+            // ========================
+            $table->foreignId('order_id')
+                  ->constrained()
+                  ->cascadeOnDelete(); // cascade si la commande est supprimée
+
+            // ========================
+            // Clé étrangère vers le produit
+            // ========================
+            $table->foreignId('product_id')
+                  ->nullable()
+                  ->constrained()
+                  ->nullOnDelete(); // met à null si le produit est supprimé
+
+            // Nom du produit (stocké pour affichage et historique)
+            $table->string('product_name');
+
+            // Quantité et prix
+            $table->decimal('unit_price', 8, 2);
+            $table->unsignedInteger('quantity')->default(1);
+            $table->decimal('total_row', 8, 2);
+
+            // ========================
+            // Audit & soft delete
+            // ========================
+            $table->timestamps();
+            $table->softDeletes();
+
+            // ========================
+            // Index pour recherche rapide
+            // ========================
+            $table->index(['tenant_id', 'order_id']);
+            $table->index(['tenant_id', 'product_id']);
+            $table->index(['tenant_id', 'product_name']);
+
+
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('order_items');
+    }
+};
+
+
+-----------------
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('charges', function (Blueprint $table) {
+
+            $table->id();
+
+            // ========================
+            // Relations principales
+            // ========================
+            $table->foreignId('tenant_id')
+                  ->constrained()
+                  ->cascadeOnDelete(); // Restaurant / établissement
+
+            $table->foreignId('user_id')
+                  ->nullable()
+                  ->constrained()
+                  ->nullOnDelete(); // Utilisateur créateur
+
+            $table->foreignId('shift_id')
+                  ->constrained()
+                  ->cascadeOnDelete(); // Shift (normal ou global)
+
+            // ========================
+            // Données métier
+            // ========================
+            $table->string('description')->nullable(); // Description de la charge
+            $table->decimal('amount', 10, 2);          // Montant de la charge
+
+            // ========================
+            // Timestamps
+            // ========================
+            $table->timestamps();
+            $table->softDeletes();
+
+            // ========================
+            // Index (performance)
+            // ========================
+            $table->index(['tenant_id', 'shift_id']);
+            $table->index(['user_id']);
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('charges');
+    }
+};
+
+
+-------------
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('fournisseurs', function (Blueprint $table) {
+            $table->id();
+
+            // ========================
+            // Multi-tenant
+            // ========================
+            $table->foreignId('tenant_id')
+                  ->constrained()
+                  ->cascadeOnDelete();
+
+            // ========================
+            // Informations fournisseur
+            // ========================
+            $table->string('name');
+            $table->string('email')->nullable();
+            $table->string('phone')->nullable();
+            $table->string('address')->nullable();
+
+            // ========================
+            // Audit & historique
+            // ========================
+            $table->timestamps();
+            $table->softDeletes(); // pour garder l’historique des fournisseurs supprimés
+
+            // ========================
+            // Index & contraintes
+            // ========================
+            $table->index(['tenant_id', 'name']);
+            $table->index(['tenant_id', 'email']);
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('fournisseurs');
+    }
+};
