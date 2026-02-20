@@ -15,7 +15,6 @@ use App\Http\Controllers\SuperController;
 use App\Http\Middleware\IsAdmin;
 use App\Http\Middleware\CheckTenant;
 use App\Http\Middleware\IsSuper;
-use App\Http\Controllers\QZController;
 
 
 
@@ -54,9 +53,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // -----------------
     // Routes Commandes
             Route::post('/orders', [OrderController::class, 'store']);       // Créer une commande
-            Route::post('/qz/sign', [QZController::class, 'sign']);
-            Route::get('/qz/certificate', [QZController::class, 'certificate']);
-   
+     
     // -----------------
     // Routes Charges
             Route::post('/charges', [ChargeController::class, 'store']);       // Créer une charge
