@@ -18,7 +18,6 @@ import Utilisateurs from "./Components/Utilisateurs";
 import Produits from "./Components/Produits";
 import Categories from "./Components/Categories";
 import Fournisseurs from "./Components/Fournisseurs";
-import TestTicket from "./Components/TestTicket";
 
 // Sécurité
 import ProtectedRoute from "./Services/ProtectedRoute";
@@ -31,7 +30,6 @@ function App() {
         {/* PUBLIC */}
         <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/Testprint" element={<TestTicket/>}/>
         
 
         {/* POS : admin + serveur */}
