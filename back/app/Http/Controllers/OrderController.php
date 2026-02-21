@@ -106,7 +106,7 @@ class OrderController extends Controller
             DB::commit();
 
             // 🖨️ Impression ticket (optionnelle)
-            // $this->printTicket($order);
+            $this->printTicket($order);
 
             return response()->json([
                 'message' => 'Commande enregistrée avec succès',
@@ -160,68 +160,86 @@ class OrderController extends Controller
         ]);
     }
 
-//     /**
-//      * Impression ticket
-//      */
-//     private function printTicket(Order $order)
-//     {
-//         try {
-//             $connector = new WindowsPrintConnector("ticket-thermique");
-//             $printer = new Printer($connector);
-//             $tenant = Tenant::find($order->tenant_id);
+    /**
+     * Impression ticket
+     */
+private function printTicket(Order $order)
+{
+    try {
+        $connector = new WindowsPrintConnector("ticket-thermique");
+        $printer = new Printer($connector);
+        $tenant = Tenant::find($order->tenant_id);
 
-//             $printer->setJustification(Printer::JUSTIFY_CENTER);
-//             $printer->setEmphasis(true);
-//             $printer->setTextSize(2, 2);
-            
-// if ($tenant->logo && $tenant->show_logo_on_ticket) {
-//     $logoPath = storage_path('app/public/' . $tenant->logo);
-//     if (file_exists($logoPath)) {
-//         try {
-//             \Log::info("Chargement logo pour impression : $logoPath");
-//             $img = EscposImage::load($logoPath, true);
-//             $printer->graphics($img);
-//             $printer->feed(1);
-//         } catch (\Exception $e) {
-//             \Log::error("Erreur chargement logo : " . $e->getMessage());
-//         }
-//     } else {
-//         \Log::error("Logo introuvable : $logoPath");
-//     }
-// }
+        // ==================== EN-TÊTE ====================
+        $printer->setJustification(Printer::JUSTIFY_CENTER);
+        
+        // Logo
+        if ($tenant->logo && $tenant->show_logo_on_ticket) {
+            $logoPath = storage_path('app/public/' . $tenant->logo);
+            if (file_exists($logoPath)) {
+                try {
+                    $img = EscposImage::load($logoPath, true);
+                    $printer->graphics($img);
+                } catch (\Exception $e) {
+                    \Log::error("Erreur logo : " . $e->getMessage());
+                }
+            }
+        }
 
+        // Nom établissement
+        $printer->setEmphasis(true);
+        $printer->setTextSize(2, 2);
+        $printer->text(strtoupper($tenant->nom) . "\n");
+        $printer->setTextSize(1, 1);
+        $printer->setEmphasis(false);
+        $printer->text($tenant->adresse . "\n");
+        $printer->text("Tél: " . $tenant->telephone . "\n");
+        $printer->text(date('d/m/Y H:i') . "\n");
+        $printer->text(str_repeat("=", 42) . "\n");
 
+        // ==================== ARTICLES ====================
+        $printer->setJustification(Printer::JUSTIFY_LEFT);
+        $printer->setEmphasis(true);
+        $printer->text(sprintf("%-25s %5s %10s\n", "Désignation", "Qté", "Prix"));
+        $printer->setEmphasis(false);
+        $printer->text(str_repeat("-", 42) . "\n");
 
-//             $printer->text(strtoupper($tenant->nom) . "\n");
-//             $printer->setTextSize(1, 1);
-//             $printer->setEmphasis(false);
+        foreach ($order->orderItems as $item) {
+            $printer->text(sprintf(
+                "%-22s %5d %10.2f\n",
+                substr($item->product_name, 0, 22),
+                $item->quantity,
+                $item->total_row
+            ));
+        }
 
-//             $printer->text($tenant->adresse . "\n");
-//             $printer->text("Tel : " . $tenant->telephone . "\n");
-//             $printer->text(date('d/m/Y H:i') . "\n");
-//             $printer->text(str_repeat("=", 42) . "\n");
+        // ==================== TOTAL SUR UNE SEULE LIGNE ====================
+            $printer->text(str_repeat("-", 42) . "\n");
 
-//             foreach ($order->orderItems as $item) {
-//                 $printer->text(sprintf(
-//                     "%-20s %3d %8.2f\n",
-//                     substr($item->product_name, 0, 20),
-//                     $item->quantity,
-//                     $item->total_row
-//                 ));
-//             }
+            // Centrer le texte
+            $printer->setJustification(Printer::JUSTIFY_CENTER);
+            $printer->setEmphasis(true);
+            $printer->setTextSize(1, 1);
+            $printer->text("TOTAL TTC : " . number_format($order->totalOrder, 2) . " DH\n");
+            $printer->setEmphasis(false);
+            $printer->setJustification(Printer::JUSTIFY_LEFT); // Remettre à gauche pour la suite
 
-//             $printer->text(str_repeat("-", 42) . "\n");
-//             $printer->setEmphasis(true);
-//             $printer->text("TOTAL : " . number_format($order->totalOrder, 2) . " DH\n");
-//             $printer->setEmphasis(false);
+            $printer->text(str_repeat("-", 42) . "\n");
 
-//             $printer->feed(2);
-//             $printer->cut();
-//             $printer->close();
+        // ==================== PAIEMENT & SERVEUR ====================
+        $printer->text("Paiement: " . ($order->payment_method ?? "Espèces") . "\n");
+        $printer->text("Serveur: " . ($order->server_name ?? auth()->user()->name ?? "Admin") . "\n");
 
-//         } catch (\Exception $e) {
-//             \Log::error("Erreur impression ticket : " . $e->getMessage());
-//         }
-//     }
-// }
+        // ==================== PIED DE PAGE ====================
+        $printer->text(str_repeat("=", 42) . "\n");
+        $printer->setJustification(Printer::JUSTIFY_CENTER);
+        $printer->text("MERCI DE VOTRE VISITE\n");
+        
+        $printer->cut();
+        $printer->close();
+
+    } catch (\Exception $e) {
+        \Log::error("Erreur impression ticket : " . $e->getMessage());
+    }
+}
 }

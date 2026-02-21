@@ -18,6 +18,7 @@ import Utilisateurs from "./Components/Utilisateurs";
 import Produits from "./Components/Produits";
 import Categories from "./Components/Categories";
 import Fournisseurs from "./Components/Fournisseurs";
+import Settings from "./Components/Settings";
 
 // Sécurité
 import ProtectedRoute from "./Services/ProtectedRoute";
@@ -94,6 +95,14 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="settings"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <Settings />
+              </ProtectedRoute>
+            } 
+            />
         </Route>
 
         {/* SUPER ADMIN */}

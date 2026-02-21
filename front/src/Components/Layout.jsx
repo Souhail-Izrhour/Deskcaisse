@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Outlet } from "react-router-dom";
-import { FiShoppingCart, FiPlay, FiTrendingUp, FiStopCircle, FiUsers, FiClock, FiPackage, FiGrid, FiTruck, FiFileText, FiDollarSign, FiLogOut, FiX, FiMenu, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiShoppingCart, FiSettings, FiPlay, FiTrendingUp, FiStopCircle, FiUsers, FiClock, FiPackage, FiGrid, FiTruck, FiFileText, FiDollarSign, FiLogOut, FiX, FiMenu, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { FaSpinner } from "react-icons/fa";
 import AxiosClient from "../Services/AxiosClient";
 import ConfirmationModal from "../Modals/ConfirmationModal";
@@ -157,6 +157,7 @@ function Layout() {
     { path: "/pos/fournisseurs", label: "Fournisseurs", icon: <FiTruck />, color: "text-orange-600", bgColor: "hover:bg-orange-50" },
     { path: "/pos/raports", label: "Rapports", icon: <FiFileText />, color: "text-red-600", bgColor: "hover:bg-red-50" },
     { path: "/pos/utilisateurs", label: "Utilisateurs", icon: <FiUsers />, color: "text-indigo-600", bgColor: "hover:bg-indigo-50" },
+    { path: "/pos/settings", label: "Paramètres", icon: <FiSettings />, color: "text-gray-600", bgColor: "hover:bg-gray-50" },
   ];
 
   // Rendu pour la version desktop (sidebar masquée - icônes seulement)
