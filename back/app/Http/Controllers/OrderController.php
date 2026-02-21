@@ -196,14 +196,14 @@ private function printTicket(Order $order)
         $printer->text("Tél: " . $tenant->telephone . "\n");
         $printer->text(date('d/m/Y H:i') . "\n");
         $printer->setJustification(Printer::JUSTIFY_LEFT);
-        $printer->text(str_repeat("=", 42) . "\n");
+        $printer->text(str_repeat("=", 48) . "\n");
 
         // ==================== ARTICLES ====================
         $printer->setJustification(Printer::JUSTIFY_LEFT);
         $printer->setEmphasis(true);
         $printer->text(sprintf("%-25s %5s %10s\n", "Désignation", "Qté", "Prix"));
         $printer->setEmphasis(false);
-        $printer->text(str_repeat("-", 42) . "\n");
+        $printer->text(str_repeat("-", 48) . "\n");
 
         foreach ($order->orderItems as $item) {
             $printer->text(sprintf(
@@ -215,7 +215,7 @@ private function printTicket(Order $order)
         }
 
         // ==================== TOTAL SUR UNE SEULE LIGNE ====================
-            $printer->text(str_repeat("-", 42) . "\n");
+            $printer->text(str_repeat("-", 48) . "\n");
 
             // Centrer le texte
             $printer->setJustification(Printer::JUSTIFY_CENTER);
@@ -225,17 +225,68 @@ private function printTicket(Order $order)
             $printer->setEmphasis(false);
             $printer->setJustification(Printer::JUSTIFY_LEFT); // Remettre à gauche pour la suite
 
-            $printer->text(str_repeat("-", 42) . "\n");
+            $printer->text(str_repeat("-", 48) . "\n");
 
         // ==================== PAIEMENT & SERVEUR ====================
         $printer->text("Paiement: " . ($order->payment_method ?? "Espèces") . "\n");
         $printer->text("Opérateur: " . (($order->user->prenom ?? '') . ' ' . ($order->user->nom ?? '')) . "\n");        // ==================== PIED DE PAGE ====================
-        $printer->text(str_repeat("=", 42) . "\n");
+        $printer->text(str_repeat("=", 48) . "\n");
         $printer->setJustification(Printer::JUSTIFY_CENTER);
      $printer->text($tenant->ticket_footer_message . "\n");
         
         $printer->cut();
         $printer->close();
+        if($tenant->ticket_type === 'double') {
+            try {
+            // ==================== EN-TÊTE CUISINE ====================
+            $printer->setJustification(Printer::JUSTIFY_LEFT);
+            // Informations de base
+            $printer->setEmphasis(true);
+            $printer->setTextSize(1, 1);
+            $printer->text("COMMANDE N°: " . $order->id . "\n");
+            $printer->setEmphasis(false);
+            $printer->text("Date: " . date('d/m/Y H:i') . "\n");
+            $printer->text("Serveur: " . (($order->user->prenom ?? '') . ' ' . ($order->user->nom ?? '')) . "\n");
+            
+            $printer->text(str_repeat("=", 48) . "\n");
+            // En-tête pour la cuisine
+            $printer->setEmphasis(true);
+            $printer->text(sprintf("%-30s %10s\n", "PRODUIT", "QTÉ"));
+            $printer->setEmphasis(false);
+            $printer->text(str_repeat("-", 48) . "\n");
+
+            // Liste des articles avec le format "Nom x Quantité" (AVEC le x)
+            foreach ($order->orderItems as $item) {
+            // Nom du produit en grand
+            $printer->setEmphasis(true);
+            $printer->setTextSize(2, 3);
+            $printer->text(substr($item->product_name, 0, 20)); // Nom du produit sans le x
+            
+            // Espace et x en taille normale
+            $printer->setTextSize(1, 1);
+            $printer->text(" x ");
+            
+            // Quantité en taille moyenne (entre grand et petit)
+            $printer->setTextSize(2, 2);
+            $printer->text($item->quantity . "\n");
+            
+            // Remise à la taille normale
+            $printer->setTextSize(1, 1);
+            $printer->setEmphasis(false);
+            
+            // Ligne de séparation
+            $printer->text(str_repeat("-", 48) . "\n");
+        }
+            $printer->cut();
+            $printer->close();
+
+            \Log::info("Ticket cuisine imprimé pour la commande N°" . $order->id);
+
+        } catch (\Exception $e) {
+            \Log::error("Erreur impression ticket cuisine: " . $e->getMessage());
+        }
+            
+        }
 
     } catch (\Exception $e) {
         \Log::error("Erreur impression ticket : " . $e->getMessage());
