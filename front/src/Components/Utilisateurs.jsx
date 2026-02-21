@@ -122,22 +122,71 @@ function Utilisateurs() {
         ? setEditData(prev => ({ ...prev, email: input }))
         : setNewUser(prev => ({ ...prev, email: input }));
     }
+    // Ajout des conditions pour les mots de passe
+    else if (inputName === "password") {
+      if (isEditing) {
+        setEditPassword(prev => ({ ...prev, password: input }));
+      } else {
+        setNewUser(prev => ({ ...prev, password: input }));
+      }
+    } else if (inputName === "password_confirmation") {
+      if (isEditing) {
+        setEditPassword(prev => ({ ...prev, password_confirmation: input }));
+      } else {
+        setNewUser(prev => ({ ...prev, password_confirmation: input }));
+      }
+    }
   }, [inputName, isEditing]);
 
   const handleKeyPress = useCallback((button) => {
     if (button === "{bksp}") {
-      const currentValue = isEditing 
-        ? editData[inputName] || ""
-        : newUser[inputName] || "";
+      let currentValue = "";
+      
+      // Déterminer la valeur actuelle en fonction du champ
+      if (inputName) {
+        if (inputName === "password" || inputName === "password_confirmation") {
+          // Pour les champs de mot de passe
+          if (isEditing) {
+            currentValue = inputName === "password" 
+              ? editPassword.password || "" 
+              : editPassword.password_confirmation || "";
+          } else {
+            currentValue = inputName === "password" 
+              ? newUser.password || "" 
+              : newUser.password_confirmation || "";
+          }
+        } else {
+          // Pour les autres champs
+          currentValue = isEditing 
+            ? editData[inputName] || ""
+            : newUser[inputName] || "";
+        }
+      }
       
       const newValue = currentValue.slice(0, -1);
       setKeyboardInput(newValue);
       
       if (inputName) {
-        if (isEditing) {
-          setEditData(prev => ({ ...prev, [inputName]: newValue }));
+        if (inputName === "password" || inputName === "password_confirmation") {
+          if (isEditing) {
+            if (inputName === "password") {
+              setEditPassword(prev => ({ ...prev, password: newValue }));
+            } else {
+              setEditPassword(prev => ({ ...prev, password_confirmation: newValue }));
+            }
+          } else {
+            if (inputName === "password") {
+              setNewUser(prev => ({ ...prev, password: newValue }));
+            } else {
+              setNewUser(prev => ({ ...prev, password_confirmation: newValue }));
+            }
+          }
         } else {
-          setNewUser(prev => ({ ...prev, [inputName]: newValue }));
+          if (isEditing) {
+            setEditData(prev => ({ ...prev, [inputName]: newValue }));
+          } else {
+            setNewUser(prev => ({ ...prev, [inputName]: newValue }));
+          }
         }
       }
     } else if (button === "{space}") {
@@ -145,14 +194,30 @@ function Utilisateurs() {
       setKeyboardInput(newValue);
       
       if (inputName) {
-        if (isEditing) {
-          setEditData(prev => ({ ...prev, [inputName]: newValue }));
+        if (inputName === "password" || inputName === "password_confirmation") {
+          if (isEditing) {
+            if (inputName === "password") {
+              setEditPassword(prev => ({ ...prev, password: newValue }));
+            } else {
+              setEditPassword(prev => ({ ...prev, password_confirmation: newValue }));
+            }
+          } else {
+            if (inputName === "password") {
+              setNewUser(prev => ({ ...prev, password: newValue }));
+            } else {
+              setNewUser(prev => ({ ...prev, password_confirmation: newValue }));
+            }
+          }
         } else {
-          setNewUser(prev => ({ ...prev, [inputName]: newValue }));
+          if (isEditing) {
+            setEditData(prev => ({ ...prev, [inputName]: newValue }));
+          } else {
+            setNewUser(prev => ({ ...prev, [inputName]: newValue }));
+          }
         }
       }
     }
-  }, [inputName, isEditing, editData, newUser, keyboardInput]);
+  }, [inputName, isEditing, editData, newUser, keyboardInput, editPassword]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -392,6 +457,29 @@ function Utilisateurs() {
     setKeyboardInput(currentValue);
   };
 
+  // Nouvelle fonction pour gérer le focus des champs de mot de passe
+  const handlePasswordFocus = (field) => {
+    // Ne pas afficher le clavier virtuel sur mobile
+    if (isMobile) return;
+    
+    setInputName(field);
+    setShowKeyboard(true);
+    
+    // Récupérer la valeur actuelle du champ
+    let currentValue = "";
+    if (isEditing) {
+      currentValue = field === "password" 
+        ? editPassword.password || "" 
+        : editPassword.password_confirmation || "";
+    } else {
+      currentValue = field === "password" 
+        ? newUser.password || "" 
+        : newUser.password_confirmation || "";
+    }
+    
+    setKeyboardInput(currentValue);
+  };
+
   const handleInputChange = (e, field) => {
     const value = e.target.value;
     
@@ -414,6 +502,10 @@ function Utilisateurs() {
       setEditPassword(prev => ({ ...prev, [field]: value }));
     } else {
       setNewUser(prev => ({ ...prev, [field]: value }));
+    }
+    
+    if (inputName === field) {
+      setKeyboardInput(value);
     }
   };
 
@@ -743,6 +835,7 @@ function Utilisateurs() {
                               type={showPassword ? "text" : "password"}
                               value={newUser.password}
                               onChange={(e) => handlePasswordChange(e, "password")}
+                              onFocus={() => handlePasswordFocus("password")}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-sm sm:text-base pr-10"
                               required
                               minLength={6}
@@ -773,6 +866,7 @@ function Utilisateurs() {
                               type={showConfirmPassword ? "text" : "password"}
                               value={newUser.password_confirmation}
                               onChange={(e) => handlePasswordChange(e, "password_confirmation")}
+                              onFocus={() => handlePasswordFocus("password_confirmation")}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-sm sm:text-base pr-10"
                               required
                               minLength={6}
@@ -817,6 +911,7 @@ function Utilisateurs() {
                               type={showEditPassword ? "text" : "password"}
                               value={editPassword.password}
                               onChange={(e) => handlePasswordChange(e, "password")}
+                              onFocus={() => handlePasswordFocus("password")}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-sm sm:text-base pr-10"
                               minLength={6}
                               placeholder="Laisser vide pour ne pas changer"
@@ -847,6 +942,7 @@ function Utilisateurs() {
                               type={showEditConfirmPassword ? "text" : "password"}
                               value={editPassword.password_confirmation}
                               onChange={(e) => handlePasswordChange(e, "password_confirmation")}
+                              onFocus={() => handlePasswordFocus("password_confirmation")}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-sm sm:text-base pr-10"
                               minLength={6}
                               placeholder="Laisser vide pour ne pas changer"

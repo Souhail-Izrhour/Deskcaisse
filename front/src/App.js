@@ -1,5 +1,5 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, redirect } from "react-router-dom";
 
 
 // Pages publiques
@@ -101,7 +101,12 @@ function App() {
           path="/super"
           element={
             <ProtectedRoute allowedRoles={["super_admin"]}>
-              <div>Super Admin Dashboard</div>
+              <div>Super Admin Dashboard 
+                <button onClick={() => {
+                  localStorage.clear();
+                  window.location.href = "/login";
+                }}>Logout</button>
+              </div>
             </ProtectedRoute>
           }
         />
