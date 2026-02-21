@@ -195,6 +195,7 @@ private function printTicket(Order $order)
         $printer->text($tenant->adresse . "\n");
         $printer->text("Tél: " . $tenant->telephone . "\n");
         $printer->text(date('d/m/Y H:i') . "\n");
+        $printer->setJustification(Printer::JUSTIFY_LEFT);
         $printer->text(str_repeat("=", 42) . "\n");
 
         // ==================== ARTICLES ====================
