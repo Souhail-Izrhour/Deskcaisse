@@ -229,9 +229,7 @@ private function printTicket(Order $order)
 
         // ==================== PAIEMENT & SERVEUR ====================
         $printer->text("Paiement: " . ($order->payment_method ?? "Espèces") . "\n");
-        $printer->text("Serveur: " . ($order->server_name ?? auth()->user()->name ?? "Admin") . "\n");
-
-        // ==================== PIED DE PAGE ====================
+        $printer->text("Opérateur: " . (($order->user->prenom ?? '') . ' ' . ($order->user->nom ?? '')) . "\n");        // ==================== PIED DE PAGE ====================
         $printer->text(str_repeat("=", 42) . "\n");
         $printer->setJustification(Printer::JUSTIFY_CENTER);
         $printer->text("MERCI DE VOTRE VISITE\n");
