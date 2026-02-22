@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import AxiosClient from "../Services/AxiosClient";
+import { useErrorHandler } from "../hooks/useErrorHandler";
+import SubscriptionModal from "../Modals/SubscriptionModal";
+import NotificationModal from "../Modals/NotificationModal";
 import VirtualKeyboard from "../Modals/VirtualKeyboard";
 import { FiEye, FiX } from "react-icons/fi";
+import { FaSpinner } from "react-icons/fa";
 
 export default function Settings() {
   const [settings, setSettings] = useState({
@@ -14,11 +18,10 @@ export default function Settings() {
   });
   
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
-  const [fetching, setFetching] = useState(false); // Pour le fetching initial
+  const [fetching, setFetching] = useState(false);
 
   // États pour le clavier virtuel
-  const [showKeyboard, setShowKeyboard] = useState(true); // Toujours true par défaut
+  const [showKeyboard, setShowKeyboard] = useState(true);
   const [inputName, setInputName] = useState(null);
   const [keyboardInput, setKeyboardInput] = useState("");
   const formRef = useRef();
@@ -26,6 +29,23 @@ export default function Settings() {
 
   // État pour la modal d'aperçu
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+
+  // État pour la notification
+  const [notification, setNotification] = useState({
+    show: false,
+    type: "info",
+    title: "",
+    message: "",
+    duration: 5000
+  });
+
+  // Utilisation du hook d'erreur
+  const {
+    handleError,
+    showSubscriptionModal,
+    errorMessage,
+    closeSubscriptionModal
+  } = useErrorHandler();
 
   // Détection mobile
   useEffect(() => {
@@ -52,16 +72,31 @@ export default function Settings() {
       const response = await AxiosClient.get('/ticket-settings');
       setSettings(response.data);
     } catch (error) {
-      showMessage('error', 'Erreur lors du chargement des paramètres');
+      showNotification('error', 'Erreur lors du chargement des paramètres', error);
     } finally {
       setFetching(false);
     }
   };
 
-  const showMessage = (type, text) => {
-    setMessage({ type, text });
-    setTimeout(() => setMessage({ type: '', text: '' }), 3000);
-  };
+  // Fonction de notification avec gestion d'erreur
+  const showNotification = useCallback((type, message, error = null, title = "", duration = 5000) => {
+    if (error && handleError(error)) {
+      return;
+    }
+    
+    setNotification({
+      show: true,
+      type,
+      title: title || (type === 'success' ? 'Succès' : type === 'error' ? 'Erreur' : 'Information'),
+      message,
+      duration
+    });
+  }, [handleError]);
+
+  // Fermeture de la notification
+  const closeNotification = useCallback(() => {
+    setNotification(prev => ({ ...prev, show: false }));
+  }, []);
 
   // Gestionnaires pour chaque fonctionnalité
   const handleFooterUpdate = async (e) => {
@@ -78,9 +113,9 @@ export default function Settings() {
         ticket_footer_message: response.data.ticket_footer_message
       }));
       
-      showMessage('success', 'Footer mis à jour avec succès');
+      showNotification('success', 'Footer mis à jour avec succès');
     } catch (error) {
-      showMessage('error', 'Erreur lors de la mise à jour du footer');
+      showNotification('error', 'Erreur lors de la mise à jour du footer', error);
     } finally {
       setLoading(false);
     }
@@ -97,9 +132,9 @@ export default function Settings() {
         ticket_type: response.data.ticket_type
       }));
       
-      showMessage('success', 'Type de ticket mis à jour');
+      showNotification('success', 'Type de ticket mis à jour');
     } catch (error) {
-      showMessage('error', 'Erreur lors de la mise à jour');
+      showNotification('error', 'Erreur lors de la mise à jour', error);
     }
   };
 
@@ -117,9 +152,9 @@ export default function Settings() {
         nom: response.data.nom
       }));
       
-      showMessage('success', 'Nom mis à jour avec succès');
+      showNotification('success', 'Nom mis à jour avec succès');
     } catch (error) {
-      showMessage('error', 'Erreur lors de la mise à jour du nom');
+      showNotification('error', 'Erreur lors de la mise à jour du nom', error);
     } finally {
       setLoading(false);
     }
@@ -139,9 +174,9 @@ export default function Settings() {
         telephone: response.data.telephone
       }));
       
-      showMessage('success', 'Téléphone mis à jour avec succès');
+      showNotification('success', 'Téléphone mis à jour avec succès');
     } catch (error) {
-      showMessage('error', 'Erreur lors de la mise à jour du téléphone');
+      showNotification('error', 'Erreur lors de la mise à jour du téléphone', error);
     } finally {
       setLoading(false);
     }
@@ -161,9 +196,9 @@ export default function Settings() {
         adresse: response.data.adresse
       }));
       
-      showMessage('success', 'Adresse mise à jour avec succès');
+      showNotification('success', 'Adresse mise à jour avec succès');
     } catch (error) {
-      showMessage('error', 'Erreur lors de la mise à jour de l\'adresse');
+      showNotification('error', 'Erreur lors de la mise à jour de l\'adresse', error);
     } finally {
       setLoading(false);
     }
@@ -183,9 +218,9 @@ export default function Settings() {
         currency: response.data.currency
       }));
       
-      showMessage('success', 'Devise mise à jour avec succès');
+      showNotification('success', 'Devise mise à jour avec succès');
     } catch (error) {
-      showMessage('error', 'Erreur lors de la mise à jour de la devise');
+      showNotification('error', 'Erreur lors de la mise à jour de la devise', error);
     } finally {
       setLoading(false);
     }
@@ -266,7 +301,6 @@ export default function Settings() {
     const Paiment = 'espèce';
     const Operateur = 'Souhail iz';
 
-    // Exemple d'articles pour l'aperçu
     const exampleItems = [
       { name: 'Article exemple 1', quantity: 2, price: 15.00 },
       { name: 'Article exemple 2', quantity: 1, price: 25.50 },
@@ -279,7 +313,6 @@ export default function Settings() {
 
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-4 font-mono text-sm">
-        {/* En-tête du ticket */}
         <div className="text-center border-b border-gray-300 pb-3 mb-3">
           <h3 className="font-bold text-lg">{(settings.nom || "Nom de l'établissement").toUpperCase()}</h3>
           <br/>
@@ -288,14 +321,12 @@ export default function Settings() {
           <span>{currentDate} {currentTime}</span>
         </div>
 
-        {/* En-têtes des colonnes */}
         <div className="flex justify-between text-xs font-bold border-b border-gray-300 pb-1 mb-2">
           <span className="w-1/2">Article</span>
           <span className="w-1/4 text-right">Qté</span>
           <span className="w-1/4 text-right">Prix</span>
         </div>
 
-        {/* Liste des articles */}
         <div className="space-y-1 mb-3">
           {exampleItems.map((item, index) => (
             <div key={index} className="flex justify-between text-xs">
@@ -306,7 +337,6 @@ export default function Settings() {
           ))}
         </div>
 
-        {/* Total */}
         <div className="justify-center flex font-bold border-t border-gray-300 pt-2 mt-2">
           <span>TOTAL TTC : {calculateTotal()} {settings.currency}</span> 
         </div>
@@ -317,71 +347,23 @@ export default function Settings() {
           <span>Opérateur: {Operateur}</span>
         </div>
 
-        {/* Type de ticket */}
         {settings.ticket_type === 'double' && (
           <div className="text-center text-xs mt-3 p-1 bg-yellow-100 rounded">
             <span className="font-bold">⚠️ Ticket double (Client + Cuisine)</span>
           </div>
         )}
         
-        {/* Message de pied de page */}
         {settings.ticket_footer_message && (
           <div className="text-center text-xs mt-3 pt-2 border-t border-gray-300 italic">
-            {settings.ticket_footer_message.toUpperCase()}
+            {settings.ticket_footer_message}
           </div>
         )}
 
-        {/* Ligne de coupure pour ticket double */}
         {settings.ticket_type === 'double' && (
           <div className="text-center text-xs mt-3 text-gray-400">
             - - - - - - - - - - - - - - - - - - - -
           </div>
         )}
-      </div>
-    );
-  };
-
-  // Composant du clavier virtuel dans la colonne droite
-  const KeyboardInPreview = () => {
-    if (!inputName) {
-      return (
-        <div className="bg-gray-50 rounded-lg border border-gray-200 p-8 text-center">
-          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-          </svg>
-          <p className="mt-2 text-sm text-gray-600">
-            Cliquez sur un champ de saisie pour utiliser le clavier virtuel
-          </p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <div className="mb-3 pb-2 border-b border-gray-200">
-          <p className="text-sm font-medium text-gray-700">
-            Saisie en cours : {
-              inputName === 'nom' ? 'Nom' :
-              inputName === 'telephone' ? 'Téléphone' :
-              inputName === 'adresse' ? 'Adresse' :
-              inputName === 'currency' ? 'Devise' :
-              inputName === 'ticket_footer_message' ? 'Message de pied de page' : inputName
-            }
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            Cliquez en dehors pour fermer le clavier
-          </p>
-        </div>
-        <VirtualKeyboard
-          inputName={inputName}
-          inputValue={keyboardInput}
-          onChange={handleKeyboardChange}
-          onKeyPress={handleKeyPress}
-          onHide={() => {
-            setShowKeyboard(false);
-            setInputName(null);
-          }}
-        />
       </div>
     );
   };
@@ -414,6 +396,23 @@ export default function Settings() {
     <div className="min-h-screen bg-blue-100 pt-2 px-1 sm:px-4 md:px-4 pb-3 sm:pb-4 md:pb-6">
       <div className="max-w-7xl mx-auto">
         
+        {/* Modal d'abonnement expiré */}
+        <SubscriptionModal
+          show={showSubscriptionModal}
+          message={errorMessage}
+          onClose={closeSubscriptionModal}
+        />
+        
+        {/* Notification réutilisable */}
+        <NotificationModal
+          show={notification.show}
+          type={notification.type}
+          title={notification.title}
+          message={notification.message}
+          duration={notification.duration}
+          onClose={closeNotification}
+        />
+
         {/* Header avec bouton d'aperçu */}
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-2 mb-2 sm:mb-3">
           <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
@@ -426,34 +425,17 @@ export default function Settings() {
               onClick={() => setShowPreviewModal(true)}
               className="bg-green-600 hover:bg-green-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition duration-200 flex items-center justify-center text-sm sm:text-base shadow-sm hover:shadow-md"
             >
-              <FiEye className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-              <span className="hidden xs:inline">Aperçu du ticket</span>
-              <span className="xs:hidden">Aperçu du ticket</span>
+              {fetching ? (
+                <FaSpinner className="animate-spin w-5 h-5" />
+              ) : (
+                <>
+                  <FiEye className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                  <span>Aperçu du ticket</span>
+                </>
+              )}
             </button>
           </div>
         </div>
-
-        {/* Message de notification */}
-        {message.text && (
-          <div className={`mb-1 rounded-lg p-1 ${
-            message.type === 'success' 
-              ? 'bg-green-50 border border-green-200 text-green-800' 
-              : 'bg-red-50 border border-red-200 text-red-800'
-          }`}>
-            <div className="flex items-center">
-              {message.type === 'success' ? (
-                <svg className="h-5 w-5 mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              ) : (
-                <svg className="h-5 w-5 mr-2 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-              )}
-              <p className="text-sm font-medium">{message.text}</p>
-            </div>
-          </div>
-        )}
 
         {/* Conteneur principal */}
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm mb-4">
@@ -464,9 +446,7 @@ export default function Settings() {
                 {/* Colonne gauche - Paramètres */}
                 <div ref={formRef} className="space-y-4">
                   {/* Carte Informations générales */}
-                  <div className="bg-white  overflow-hidden">
-                  
-                    
+                  <div className="bg-white overflow-hidden">
                     <div className="px-6 py-1 space-y-4">
                       {/* Nom */}
                       <form onSubmit={handleNameUpdate}>
@@ -486,9 +466,9 @@ export default function Settings() {
                           <button
                             type="submit"
                             disabled={loading || fetching}
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:bg-blue-300"
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:bg-blue-300 flex items-center"
                           >
-                            Modifier
+                            {loading ? <FaSpinner className="animate-spin w-4 h-4" /> : 'Modifier'}
                           </button>
                         </div>
                       </form>
@@ -511,9 +491,9 @@ export default function Settings() {
                           <button
                             type="submit"
                             disabled={loading || fetching}
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:bg-blue-300"
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:bg-blue-300 flex items-center"
                           >
-                            Modifier
+                            {loading ? <FaSpinner className="animate-spin w-4 h-4" /> : 'Modifier'}
                           </button>
                         </div>
                       </form>
@@ -536,9 +516,9 @@ export default function Settings() {
                           <button
                             type="submit"
                             disabled={loading || fetching}
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:bg-blue-300"
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:bg-blue-300 flex items-center"
                           >
-                            Modifier
+                            {loading ? <FaSpinner className="animate-spin w-4 h-4" /> : 'Modifier'}
                           </button>
                         </div>
                       </form>
@@ -562,16 +542,14 @@ export default function Settings() {
                           <button
                             type="submit"
                             disabled={loading || fetching}
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:bg-blue-300"
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:bg-blue-300 flex items-center"
                           >
-                            Modifier
+                            {loading ? <FaSpinner className="animate-spin w-4 h-4" /> : 'Modifier'}
                           </button>
                         </div>
                       </form>
                     </div>
                   </div>
-
-                 
 
                   {/* Carte Message de pied de page */}
                   <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -589,8 +567,7 @@ export default function Settings() {
                         value={settings.ticket_footer_message || ''}
                         onChange={(e) => handleInputChange(e, "ticket_footer_message")}
                         onFocus={() => handleInputFocus("ticket_footer_message")}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        rows="4"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Message qui apparaîtra en bas de vos tickets..."
                         maxLength="255"
                         disabled={fetching}
@@ -604,9 +581,9 @@ export default function Settings() {
                         <button
                           type="submit"
                           disabled={loading || fetching}
-                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:bg-blue-300"
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:bg-blue-300 flex items-center"
                         >
-                          {loading ? 'Mise à jour...' : 'Mettre à jour'}
+                          {loading ? <FaSpinner className="animate-spin w-4 h-4" /> : 'Mettre à jour'}
                         </button>
                       </div>
                     </form>
@@ -640,7 +617,7 @@ export default function Settings() {
                           />
                           <span className="ml-3">
                             <span className="block font-medium text-gray-900">Ticket normal</span>
-                            <span className="block text-sm text-gray-500">Format standard avec une seule impression</span>
+                            <span className="block text-sm text-gray-500">Client seulement</span>
                           </span>
                         </label>
                         
@@ -656,7 +633,7 @@ export default function Settings() {
                           />
                           <span className="ml-3">
                             <span className="block font-medium text-gray-900">Ticket double</span>
-                            <span className="block text-sm text-gray-500">Ticket client + ticket cuisine</span>
+                            <span className="block text-sm text-gray-500">Client + Cuisine</span>
                           </span>
                         </label>
                       </div>
@@ -664,45 +641,41 @@ export default function Settings() {
                   </div>
 
                   <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden sticky top-6">
-                    
-                   
-                      {/* Le clavier est toujours affiché, même sans input sélectionné */}
-                      {!inputName ? (
-                        <div className="bg-gray-50 rounded-lg border border-gray-200 p-8 text-center">
-                          <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                          </svg>
-                          <p className="mt-2 text-sm text-gray-600">
-                            Cliquez sur un champ de saisie pour utiliser le clavier virtuel
+                    {/* Le clavier est toujours affiché, même sans input sélectionné */}
+                    {!inputName ? (
+                      <div className="bg-gray-50 rounded-lg border border-gray-200 p-8 text-center">
+                        <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                        </svg>
+                        <p className="mt-2 text-sm text-gray-600">
+                          Cliquez sur un champ de saisie pour utiliser le clavier virtuel
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="bg-white rounded-lg border border-gray-200 p-3">
+                        <div className="mb-3 pb-2 border-b border-gray-200">
+                          <p className="text-sm font-medium text-gray-700">
+                            Saisie en cours : {
+                              inputName === 'nom' ? 'Nom' :
+                              inputName === 'telephone' ? 'Téléphone' :
+                              inputName === 'adresse' ? 'Adresse' :
+                              inputName === 'currency' ? 'Devise' :
+                              inputName === 'ticket_footer_message' ? 'Message de pied de page' : inputName
+                            }
                           </p>
                         </div>
-                      ) : (
-                        <div className="bg-white rounded-lg border border-gray-200 p-3">
-                          <div className="mb-3 pb-2 border-b border-gray-200">
-                            <p className="text-sm font-medium text-gray-700">
-                              Saisie en cours : {
-                                inputName === 'nom' ? 'Nom' :
-                                inputName === 'telephone' ? 'Téléphone' :
-                                inputName === 'adresse' ? 'Adresse' :
-                                inputName === 'currency' ? 'Devise' :
-                                inputName === 'ticket_footer_message' ? 'Message de pied de page' : inputName
-                              }
-                            </p>
-                          
-                          </div>
-                          <VirtualKeyboard
-                            inputName={inputName}
-                            inputValue={keyboardInput}
-                            onChange={handleKeyboardChange}
-                            onKeyPress={handleKeyPress}
-                            onHide={() => {
-                              setShowKeyboard(false);
-                              setInputName(null);
-                            }}
-                          />
-                        </div>
-                      )}
-                    
+                        <VirtualKeyboard
+                          inputName={inputName}
+                          inputValue={keyboardInput}
+                          onChange={handleKeyboardChange}
+                          onKeyPress={handleKeyPress}
+                          onHide={() => {
+                            setShowKeyboard(false);
+                            setInputName(null);
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
