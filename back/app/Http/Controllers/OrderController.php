@@ -219,7 +219,7 @@ private function printTicket(Order $order)
         $printer->text("Opérateur: " . (($order->user->prenom ?? '') . ' ' . ($order->user->nom ?? '')) . "\n");        // ==================== PIED DE PAGE ====================
         $printer->text(str_repeat("=", 48) . "\n");
         $printer->setJustification(Printer::JUSTIFY_CENTER);
-     $printer->text($tenant->ticket_footer_message . "\n");
+        $printer->text(strtoupper($tenant->ticket_footer_message) . "\n");
         
         $printer->cut();
         $printer->close();
