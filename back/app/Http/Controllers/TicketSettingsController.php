@@ -28,24 +28,6 @@ class TicketSettingsController extends Controller
         ]);
     }
 
-    // ========================
-    // 2️⃣ Activer / désactiver le logo
-    // ========================
-    public function toggleLogo(Request $request)
-    {
-        $request->validate([
-            'show_logo_on_ticket' => 'required|boolean',
-        ]);
-
-        $tenant = Auth::user()->tenant;
-        $tenant->show_logo_on_ticket = $request->show_logo_on_ticket;
-        $tenant->save();
-
-        return response()->json([
-            'message' => 'Affichage du logo mis à jour.',
-            'show_logo_on_ticket' => $tenant->show_logo_on_ticket,
-        ]);
-    }
 
     // ========================
     // 3️⃣ Changer le type de ticket
@@ -78,40 +60,86 @@ class TicketSettingsController extends Controller
             'show_logo_on_ticket'   => $tenant->show_logo_on_ticket,
             'ticket_type'           => $tenant->ticket_type,
             'logo'                  => $tenant->logo,
+            'nom'                   => $tenant->nom,
+            'adresse'               => $tenant->adresse,
+            'telephone'             => $tenant->telephone,
+            'currency'              => $tenant->currency ?? 'DH', // valeur par défaut si non définie
         ]);
     }
 
     // ========================
-    // 5️⃣ Upload / changer le logo
+    // 6️⃣ Modifier le nom du tenant
     // ========================
+    public function updateName(Request $request)
+    {
+        $request->validate([
+            'nom' => 'required|string|max:100',
+        ]);
 
- public function uploadLogo(Request $request)
-{
-    $request->validate([
-        'logo' => 'required|image|mimes:jpg,jpeg,png,bmp,webp|max:2048',
-    ]);
+        $tenant = Auth::user()->tenant;
+        $tenant->nom = $request->nom;
+        $tenant->save();
 
-    $tenant = Auth::user()->tenant;
-    $tenantId = $tenant->id;
-
-    // Supprimer l'ancien logo
-    if ($tenant->logo && Storage::disk('public')->exists($tenant->logo)) {
-        Storage::disk('public')->delete($tenant->logo);
+        return response()->json([
+            'message' => 'Nom du tenant mis à jour.',
+            'nom' => $tenant->nom,
+        ]);
     }
 
-    // Stockage par tenant
-    $path = $request->file('logo')->store(
-        "tenants/{$tenantId}/logos",
-        'public'
-    );
+    // ========================
+    // 7️⃣ Modifier le téléphone
+    // ========================
+    public function updateTelephone(Request $request)
+    {
+        $request->validate([
+            'telephone' => 'required|string|max:20',
+        ]);
 
-    $tenant->logo = $path;
-    $tenant->save();
+        $tenant = Auth::user()->tenant;
+        $tenant->telephone = $request->telephone;
+        $tenant->save();
 
-    return response()->json([
-        'message' => 'Logo uploadé avec succès.',
-        'logo'    => $tenant->logo,
-    ]);
-}
+        return response()->json([
+            'message' => 'Téléphone mis à jour.',
+            'telephone' => $tenant->telephone,
+        ]);
+    }
 
+    // ========================
+    // 8️⃣ Modifier l’adresse
+    // ========================
+    public function updateAdresse(Request $request)
+    {
+        $request->validate([
+            'adresse' => 'required|string|max:255',
+        ]);
+
+        $tenant = Auth::user()->tenant;
+        $tenant->adresse = $request->adresse;
+        $tenant->save();
+
+        return response()->json([
+            'message' => 'Adresse mise à jour.',
+            'adresse' => $tenant->adresse,
+        ]);
+    }
+
+    // ========================
+    // 9️⃣ Modifier la devise
+    // ========================
+    public function updateCurrency(Request $request)
+    {
+        $request->validate([
+            'currency' => 'required|string|max:10',
+        ]);
+
+        $tenant = Auth::user()->tenant;
+        $tenant->currency = $request->currency;
+        $tenant->save();
+
+        return response()->json([
+            'message' => 'Devise mise à jour.',
+            'currency' => $tenant->currency,
+        ]);
+    }
 }

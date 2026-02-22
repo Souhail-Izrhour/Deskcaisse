@@ -132,11 +132,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // -----------------
     // Paramètres des tickets
-            Route::post('/ticket-settings/upload-logo', [TicketSettingsController::class, 'uploadLogo']); // Upload du logo
             Route::put('/ticket-settings/footer', [TicketSettingsController::class, 'updateFooter']); // Mettre à jour le footer
-            Route::put('/ticket-settings/logo-toggle', [TicketSettingsController::class, 'toggleLogo']); // Activer/désactiver le logo
             Route::put('/ticket-settings/type', [TicketSettingsController::class, 'updateType']); // Changer le type de ticket
             Route::get('/ticket-settings', [TicketSettingsController::class, 'show']); // Voir les paramètres actuels
+            Route::put('/ticket-settings/name', [TicketSettingsController::class, 'updateName']); // Mettre à jour le nom du tenant
+            Route::put('/ticket-settings/telephone', [TicketSettingsController::class, 'updateTelephone']); // Mettre à jour le téléphone
+            Route::put('/ticket-settings/adresse', [TicketSettingsController::class, 'updateAdresse']); // Mettre à jour l'adresse
+            Route::put('/ticket-settings/currency', [TicketSettingsController::class, 'updateCurrency']); // Mettre à jour la devise
+
 });
     });
 });

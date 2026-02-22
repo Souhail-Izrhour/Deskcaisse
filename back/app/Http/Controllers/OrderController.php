@@ -172,24 +172,10 @@ private function printTicket(Order $order)
 
         // ==================== EN-TÊTE ====================
         $printer->setJustification(Printer::JUSTIFY_CENTER);
-        
-        // Logo
-        if ($tenant->logo && $tenant->show_logo_on_ticket) {
-            $logoPath = storage_path('app/public/' . $tenant->logo);
-            if (file_exists($logoPath)) {
-                try {
-                    $img = EscposImage::load($logoPath, true);
-                    $printer->graphics($img);
-                } catch (\Exception $e) {
-                    \Log::error("Erreur logo : " . $e->getMessage());
-                }
-            }
-        }
-
         // Nom établissement
         $printer->setEmphasis(true);
         $printer->setTextSize(2, 2);
-        $printer->text(strtoupper($tenant->nom) . "\n");
+        $printer->text(strtoupper($tenant->nom) . "\n". "\n");
         $printer->setTextSize(1, 1);
         $printer->setEmphasis(false);
         $printer->text($tenant->adresse . "\n");
@@ -207,10 +193,11 @@ private function printTicket(Order $order)
 
         foreach ($order->orderItems as $item) {
             $printer->text(sprintf(
-                "%-22s %5d %10.2f\n",
+                "%-22s %5d %10.2f %s\n",
                 substr($item->product_name, 0, 22),
                 $item->quantity,
-                $item->total_row
+                $item->total_row,
+                $tenant->currency
             ));
         }
 
@@ -221,7 +208,7 @@ private function printTicket(Order $order)
             $printer->setJustification(Printer::JUSTIFY_CENTER);
             $printer->setEmphasis(true);
             $printer->setTextSize(1, 1);
-            $printer->text("TOTAL TTC : " . number_format($order->totalOrder, 2) . " DH\n");
+            $printer->text("TOTAL TTC : " . number_format($order->totalOrder, 2) . " ".$tenant->currency."\n");
             $printer->setEmphasis(false);
             $printer->setJustification(Printer::JUSTIFY_LEFT); // Remettre à gauche pour la suite
 
