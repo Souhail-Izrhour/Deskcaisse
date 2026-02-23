@@ -66,6 +66,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/shifts/end', [ShiftController::class, 'end']);   // Terminer un shift
             Route::get('/shifts/currentStats', [ShiftController::class, 'currentStats']); // Obtenir le shift actif
             Route::post('/shifts/{shift}/printCurrentShift', [ShiftController::class, 'printCurrentShift']);            Route::get('/shifts/hasActiveShift', [ShiftController::class, 'hasActiveShift']); // Vérifier s'il y a un shift actif
+            Route::post('/shifts/{shift}/openDrawer', [ShiftController::class, 'openDrawer']); // Ouvrir le tiroir-caisse
 
     // -----------------
     // Catégories

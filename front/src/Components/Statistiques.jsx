@@ -116,7 +116,21 @@ function Statistiques() {
         return <FiShoppingBag className="w-4 h-4" />;
     }
   };
-
+const opendrawer = () => {
+  try {
+    // Appeler l'API pour ouvrir le tiroir-caisse
+    AxiosClient.post(`/shifts/${shiftStats.shift_id}/openDrawer`)
+      .then(response => {
+        showNotification("success", "Tiroir-caisse ouvert avec succès");
+      })
+      .catch(error => {
+        showNotification("error", "Erreur lors de l'ouverture du tiroir-caisse", error);
+      });
+  }
+  catch (error) {
+    showNotification("error", "Erreur lors de l'ouverture du tiroir-caisse", error);
+  }
+};
   const printShiftReport = () => {
     try {
       // Appeler l'API pour générer le rapport de shift
@@ -414,7 +428,10 @@ function Statistiques() {
             </div>
             <div className="text-center">
               <button onClick={printShiftReport} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-150">
-                Imprimer
+                Raport provisoire du shift
+              </button>
+              <button onClick={opendrawer} className="ml-2 bg-cyan-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-cyan-300 transition duration-150">
+                Tirroire caisse
               </button>
             </div>
           </div>

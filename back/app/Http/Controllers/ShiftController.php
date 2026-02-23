@@ -193,7 +193,18 @@ class ShiftController extends Controller
 
         return response()->json(['data' => $shift]);
     }
-
+public function openDrawer(Shift $shift)
+{    try {
+        $connector = new WindowsPrintConnector("ticket-thermique");
+        $printer = new Printer($connector); 
+        $printer->pulse(); // Envoie une impulsion pour ouvrir le tiroir
+        $printer->close();
+        return response()->json(['message' => 'Tiroir-caisse ouvert']);
+    } catch (\Exception $e) {
+        \Log::error('Erreur ouverture tiroir: ' . $e->getMessage());
+        return response()->json(['message' => 'Erreur ouverture tiroir', 'error' => $e->getMessage()], 500);
+    }
+}
     // ========================
     // Impression d’un shift
     // ========================
