@@ -117,6 +117,21 @@ function Statistiques() {
     }
   };
 
+  const printShiftReport = () => {
+    try {
+      // Appeler l'API pour générer le rapport de shift
+      AxiosClient.post(`/shifts/${shiftStats.shift_id}/print`)
+        .then(response => {
+          showNotification("success", "Rapport de shift généré avec succès");
+        })
+        .catch(error => {
+          showNotification("error", "Erreur lors de la génération du rapport de shift", error);
+        });
+    } catch (error) {
+      showNotification("error", "Erreur lors de la génération du rapport de shift", error);
+    }
+  };
+
   const totalCharges = shiftStats?.charges_details?.reduce(
     (sum, charge) => sum + parseFloat(charge.amount || 0),
     0
@@ -398,7 +413,7 @@ function Statistiques() {
               <p className="text-xl font-bold text-blue-600">{formatAmount(totalVentes - totalCharges)}</p>
             </div>
             <div className="text-center">
-              <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-150">
+              <button onClick={printShiftReport} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-150">
                 Imprimer
               </button>
             </div>
