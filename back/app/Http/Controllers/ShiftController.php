@@ -198,7 +198,7 @@ class ShiftController extends Controller
     // Impression d’un shift
     // ========================
 
-    public function printShift($id)
+public function printShift($id)
 {
     $user = Auth::user();
 
@@ -230,7 +230,7 @@ class ShiftController extends Controller
     // Récupérer les infos du tenant
     $tenant = Tenant::find($user->tenant_id);
 
-    // ========== CALCUL DES VENTES PAR PRODUIT ==========
+    // ========== CALCUL DES VENTES PAR PRODUIT AVEC REGROUPEMENT ==========
     $produitsVendus = [];
     foreach ($orders as $order) {
         foreach ($order->orderItems as $item) {
@@ -246,6 +246,7 @@ class ShiftController extends Controller
                 ];
             }
             
+            // Additionner les quantités et les totaux
             $produitsVendus[$productId]['quantite'] += $item->quantity;
             $produitsVendus[$productId]['total'] += $item->total_row;
         }
@@ -310,7 +311,7 @@ class ShiftController extends Controller
         $printer->setEmphasis(false);
         $printer->text("\n");
 
-        // ==================== VENTES PAR PRODUIT ====================
+        // ==================== VENTES PAR PRODUIT (REGROUPÉES) ====================
         if (count($produitsVendus) > 0) {
             $printer->setEmphasis(true);
             $printer->setTextSize(2, 1);
@@ -319,13 +320,14 @@ class ShiftController extends Controller
             $printer->setEmphasis(false);
             $printer->text(str_repeat("=", 48) . "\n");
             
-            // En-tête du tableau
+            // En-tête du tableau avec alignement
             $printer->setEmphasis(true);
             $printer->text(sprintf("%-22s %8s %8s %10s\n", "Produit", "Qté", "P.U.", "Total"));
             $printer->setEmphasis(false);
             $printer->text(str_repeat("-", 48) . "\n");
             
             foreach ($produitsVendus as $produit) {
+                // Ligne du produit avec alignement parfait
                 $printer->text(sprintf(
                     "%-22s %8d %8.2f %10.2f %s\n",
                     substr($produit['name'], 0, 22),
@@ -334,10 +336,12 @@ class ShiftController extends Controller
                     $produit['total'],
                     $tenant->currency
                 ));
+                
+                // Ligne séparatrice sous chaque produit
+                $printer->text(str_repeat("-", 48) . "\n");
             }
             
             // Total des ventes produits
-            $printer->text(str_repeat("-", 48) . "\n");
             $printer->setEmphasis(true);
             $printer->text(sprintf("%-30s %10.2f %s\n", "TOTAL PRODUITS", $totalVentes, $tenant->currency));
             $printer->setEmphasis(false);
@@ -356,6 +360,7 @@ class ShiftController extends Controller
                 $printer->text(sprintf("Commande #%d\n", $index + 1));
                 $printer->setEmphasis(false);
                 $printer->text(sprintf("Heure: %s\n", Carbon::parse($order->created_at)->format('H:i')));
+                $printer->text(sprintf("Méthode: %s\n", $order->payment_method ?? 'Espèces'));
                 $printer->text(str_repeat("-", 48) . "\n");
                 
                 // En-tête des articles
@@ -387,6 +392,10 @@ class ShiftController extends Controller
             $printer->setEmphasis(false);
             $printer->text(str_repeat("=", 48) . "\n");
             
+            // En-tête des charges
+            $printer->text(sprintf("%-35s %10s\n", "Description", "Montant"));
+            $printer->text(str_repeat("-", 48) . "\n");
+            
             foreach ($charges as $charge) {
                 $printer->text(sprintf(
                     "%-35s %10.2f %s\n",
@@ -394,7 +403,13 @@ class ShiftController extends Controller
                     $charge->amount,
                     $tenant->currency
                 ));
+                // Ligne séparatrice sous chaque charge
+                $printer->text(str_repeat("-", 48) . "\n");
             }
+            
+            $printer->setEmphasis(true);
+            $printer->text(sprintf("%-35s %10.2f %s\n", "TOTAL CHARGES", $totalCharges, $tenant->currency));
+            $printer->setEmphasis(false);
             $printer->text("\n");
         }
 
@@ -417,7 +432,10 @@ class ShiftController extends Controller
             }
         }
         
-        $printer->text(str_repeat("-", 48) . "\n");
+        if ($paiements->isNotEmpty()) {
+            $printer->text(str_repeat("-", 48) . "\n");
+        }
+        
         $printer->text(sprintf("%-25s : %.2f %s\n", "TOTAL VENTES", $totalVentes, $tenant->currency));
         $printer->text(sprintf("%-25s : %.2f %s\n", "TOTAL CHARGES", $totalCharges, $tenant->currency));
         $printer->text(str_repeat("=", 48) . "\n");
@@ -441,35 +459,41 @@ class ShiftController extends Controller
 
         // ==================== STATISTIQUES SUPPLÉMENTAIRES ====================
         $printer->setJustification(Printer::JUSTIFY_CENTER);
+        $printer->setEmphasis(true);
         $printer->text("STATISTIQUES\n");
+        $printer->setEmphasis(false);
         $printer->setJustification(Printer::JUSTIFY_LEFT);
         $printer->text(str_repeat("-", 48) . "\n");
         
         // Produit le plus vendu
         if (count($produitsVendus) > 0) {
             $topProduit = reset($produitsVendus);
-            $printer->text(sprintf("Top produit : %s (%d vendus)\n", 
-                substr($topProduit['name'], 0, 30), 
-                $topProduit['quantite']
-            ));
+            $printer->text(sprintf("Top produit : %s\n", substr($topProduit['name'], 0, 35)));
+            $printer->text(sprintf("Quantité vendue : %d\n", $topProduit['quantite']));
+            $printer->text(sprintf("Chiffre d'affaires : %.2f %s\n", $topProduit['total'], $tenant->currency));
+            $printer->text(str_repeat("-", 48) . "\n");
         }
         
         // Panier moyen
         $panierMoyen = $orders->count() > 0 ? $totalVentes / $orders->count() : 0;
         $printer->text(sprintf("Panier moyen : %.2f %s\n", $panierMoyen, $tenant->currency));
         
+        // Nombre d'articles vendus
+        $totalArticles = array_sum(array_column($produitsVendus, 'quantite'));
+        $printer->text(sprintf("Articles vendus : %d\n", $totalArticles));
+        
         $printer->text("\n");
 
         // ==================== PIED DE PAGE ====================
         $printer->setJustification(Printer::JUSTIFY_CENTER);
+        $printer->text(str_repeat("=", 48) . "\n");
         $printer->text("Fin du shift - " . now()->format('d/m/Y H:i:s') . "\n");
         $printer->text($tenant->ticket_footer_message . "\n");
         $printer->text("\n\n\n");
 
         // Couper le papier
         $printer->cut();
-        
-        
+       
         
         $printer->close();
 
@@ -484,6 +508,8 @@ class ShiftController extends Controller
             'charges' => $totalCharges,
             'net' => $net,
             'ventes_par_produit' => $produitsVendus,
+            'total_articles_vendus' => $totalArticles,
+            'panier_moyen' => $panierMoyen,
             'user' => $user,
             'commandes' => $orders,
             'charges_details' => $charges
@@ -504,6 +530,8 @@ class ShiftController extends Controller
             'charges' => $totalCharges,
             'net' => $net,
             'ventes_par_produit' => $produitsVendus,
+            'total_articles_vendus' => array_sum(array_column($produitsVendus, 'quantite')),
+            'panier_moyen' => $orders->count() > 0 ? $totalVentes / $orders->count() : 0,
             'user' => $user,
             'commandes' => $orders,
             'charges_details' => $charges
