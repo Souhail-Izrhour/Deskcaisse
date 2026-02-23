@@ -164,7 +164,7 @@ function Login() {
     rel="noopener noreferrer"
     className="text-blue-600 hover:text-blue-800 font-medium underline underline-offset-2"
   >
-    Besoin d'aide ? Consulter notre support → hlasstech.com
+    Besoin d'aide ? Contacter le support via notre site web officiel → www.hlasstech.com
   </a>
   </p>
 
