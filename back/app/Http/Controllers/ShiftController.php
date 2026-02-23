@@ -198,7 +198,7 @@ class ShiftController extends Controller
     // Impression d’un shift
     // ========================
 
-public function printShift($id)
+public function printCurrentShift($id)
 {
     $user = Auth::user();
 

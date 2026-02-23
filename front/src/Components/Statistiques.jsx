@@ -120,7 +120,7 @@ function Statistiques() {
   const printShiftReport = () => {
     try {
       // Appeler l'API pour générer le rapport de shift
-      AxiosClient.post(`/shifts/${shiftStats.shift_id}/print`)
+      AxiosClient.post(`/shifts/${shiftStats.shift_id}/printCurrentShift`)
         .then(response => {
           showNotification("success", "Rapport de shift généré avec succès");
         })
