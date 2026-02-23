@@ -271,7 +271,16 @@ public function printShift($id)
         $printer->setTextSize(1, 1);
         $printer->setEmphasis(false);
         
-        $printer->text("RAPPORT DE SHIFT\n");
+        // Indiquer si le shift est en cours ou terminé
+        if ($shift->ended_at === null) {
+            $printer->setEmphasis(true);
+            $printer->setTextSize(2, 1);
+            $printer->text(">>> SHIFT EN COURS <<<\n");
+            $printer->setTextSize(1, 1);
+            $printer->setEmphasis(false);
+        } else {
+            $printer->text("RAPPORT DE SHIFT\n");
+        }
         $printer->text(str_repeat("=", 48) . "\n\n");
 
         // ==================== INFORMATIONS SHIFT ====================
@@ -284,7 +293,13 @@ public function printShift($id)
         $printer->text(sprintf("%-15s : #%d\n", "SHIFT", $shift->id));
         $printer->text(sprintf("%-15s : %s %s\n", "SERVEUR", $user->prenom ?? '', $user->nom ?? ''));
         $printer->text(sprintf("%-15s : %s\n", "DÉBUT", Carbon::parse($shift->started_at)->format('d/m/Y H:i')));
-        $printer->text(sprintf("%-15s : %s\n", "FIN", now()->format('d/m/Y H:i')));
+        
+        if ($shift->ended_at) {
+            $printer->text(sprintf("%-15s : %s\n", "FIN", Carbon::parse($shift->ended_at)->format('d/m/Y H:i')));
+        } else {
+            $printer->text(sprintf("%-15s : %s\n", "FIN", "En cours"));
+        }
+        
         $printer->text(sprintf("%-15s : %s\n", "DURÉE", $duration));
         $printer->text("\n");
 
@@ -293,11 +308,9 @@ public function printShift($id)
         $printer->text("RÉSUMÉ DES VENTES\n");
         $printer->setEmphasis(false);
         $printer->text(str_repeat("-", 48) . "\n");
-        
         $totalVentes = $orders->sum('totalOrder');
         $totalCharges = $charges->sum('amount');
         $net = $totalVentes - $totalCharges;
-        
         $printer->text(sprintf("%-25s : %s\n", "Nombre de commandes", $orders->count()));
         $printer->text(sprintf("%-25s : %.2f %s\n", "Total ventes", $totalVentes, $tenant->currency));
         $printer->text(sprintf("%-25s : %.2f %s\n", "Total charges", $totalCharges, $tenant->currency));
@@ -305,10 +318,11 @@ public function printShift($id)
         
         // NET en gras et plus grand
         $printer->setEmphasis(true);
-        $printer->setTextSize(2, 2);
-        $printer->text(sprintf("%-25s : %.2f %s\n", "NET", $net, $tenant->currency));
+        $printer->setTextSize(2, 1);
+        $printer->text("NET : " . number_format($net, 2) . " " . $tenant->currency . "\n");
         $printer->setTextSize(1, 1);
         $printer->setEmphasis(false);
+        $printer->text(str_repeat("-", 48) . "\n");
         $printer->text("\n");
 
         // ==================== VENTES PAR PRODUIT (REGROUPÉES) ====================
@@ -322,15 +336,15 @@ public function printShift($id)
             
             // En-tête du tableau avec alignement
             $printer->setEmphasis(true);
-            $printer->text(sprintf("%-22s %8s %8s %10s\n", "Produit", "Qté", "P.U.", "Total"));
+            $printer->text(sprintf("%-16s %8s %8s %10s\n", "Produit", "Qté", "P.U.", "Total"));
             $printer->setEmphasis(false);
             $printer->text(str_repeat("-", 48) . "\n");
             
             foreach ($produitsVendus as $produit) {
                 // Ligne du produit avec alignement parfait
                 $printer->text(sprintf(
-                    "%-22s %8d %8.2f %10.2f %s\n",
-                    substr($produit['name'], 0, 22),
+                    "%-15s %8d %8.2f %10.2f %s\n",
+                    substr($produit['name'], 0, 15),
                     $produit['quantite'],
                     $produit['prix_unitaire'],
                     $produit['total'],
@@ -343,46 +357,9 @@ public function printShift($id)
             
             // Total des ventes produits
             $printer->setEmphasis(true);
-            $printer->text(sprintf("%-30s %10.2f %s\n", "TOTAL PRODUITS", $totalVentes, $tenant->currency));
+            $printer->text(sprintf("%-33s %10.2f %s\n", "TOTAL PRODUITS", $totalVentes, $tenant->currency));
             $printer->setEmphasis(false);
             $printer->text("\n");
-        }
-
-        // ==================== DÉTAIL DES COMMANDES ====================
-        if ($orders->count() > 0) {
-            $printer->setEmphasis(true);
-            $printer->text("DÉTAIL DES COMMANDES\n");
-            $printer->setEmphasis(false);
-            $printer->text(str_repeat("=", 48) . "\n");
-            
-            foreach ($orders as $index => $order) {
-                $printer->setEmphasis(true);
-                $printer->text(sprintf("Commande #%d\n", $index + 1));
-                $printer->setEmphasis(false);
-                $printer->text(sprintf("Heure: %s\n", Carbon::parse($order->created_at)->format('H:i')));
-                $printer->text(sprintf("Méthode: %s\n", $order->payment_method ?? 'Espèces'));
-                $printer->text(str_repeat("-", 48) . "\n");
-                
-                // En-tête des articles
-                $printer->text(sprintf("%-25s %5s %10s\n", "Article", "Qté", "Total"));
-                $printer->text(str_repeat("-", 48) . "\n");
-                
-                foreach ($order->orderItems as $item) {
-                    $printer->text(sprintf(
-                        "%-25s %5d %10.2f %s\n",
-                        substr($item->product->name ?? $item->product_name, 0, 25),
-                        $item->quantity,
-                        $item->total_row,
-                        $tenant->currency
-                    ));
-                }
-                
-                $printer->text(str_repeat("-", 48) . "\n");
-                $printer->setEmphasis(true);
-                $printer->text(sprintf("%-30s %10.2f %s\n", "TOTAL", $order->totalOrder, $tenant->currency));
-                $printer->setEmphasis(false);
-                $printer->text("\n");
-            }
         }
 
         // ==================== DÉTAIL DES CHARGES ====================
@@ -398,8 +375,8 @@ public function printShift($id)
             
             foreach ($charges as $charge) {
                 $printer->text(sprintf(
-                    "%-35s %10.2f %s\n",
-                    substr($charge->description ?? 'Charge', 0, 35),
+                    "%-33s %10.2f %s\n",
+                    substr($charge->description ?? 'Charge', 0, 33),
                     $charge->amount,
                     $tenant->currency
                 ));
@@ -408,7 +385,7 @@ public function printShift($id)
             }
             
             $printer->setEmphasis(true);
-            $printer->text(sprintf("%-35s %10.2f %s\n", "TOTAL CHARGES", $totalCharges, $tenant->currency));
+            $printer->text(sprintf("%-33s %10.2f %s\n", "TOTAL CHARGES", $totalCharges, $tenant->currency));
             $printer->setEmphasis(false);
             $printer->text("\n");
         }
@@ -445,9 +422,14 @@ public function printShift($id)
         $printer->setEmphasis(true);
         $printer->setTextSize(3, 3);
         
+        // Message selon l'état du shift
+        if ($shift->ended_at === null) {
+            $printer->text("NET PROVISOIRE\n");
+        }
+        
         // Couleur selon le résultat (si supporté)
         if ($net >= 0) {
-            $printer->text(sprintf("NET: %.2f %s\n", $net, $tenant->currency));
+            $printer->text(sprintf("%.2f %s\n", $net, $tenant->currency));
         } else {
             $printer->text(sprintf("PERTE: %.2f %s\n", abs($net), $tenant->currency));
         }
@@ -455,63 +437,32 @@ public function printShift($id)
         $printer->setTextSize(1, 1);
         $printer->setEmphasis(false);
         $printer->setJustification(Printer::JUSTIFY_LEFT);
-        $printer->text(str_repeat("=", 48) . "\n\n");
-
-        // ==================== STATISTIQUES SUPPLÉMENTAIRES ====================
-        $printer->setJustification(Printer::JUSTIFY_CENTER);
-        $printer->setEmphasis(true);
-        $printer->text("STATISTIQUES\n");
-        $printer->setEmphasis(false);
-        $printer->setJustification(Printer::JUSTIFY_LEFT);
-        $printer->text(str_repeat("-", 48) . "\n");
-        
-        // Produit le plus vendu
-        if (count($produitsVendus) > 0) {
-            $topProduit = reset($produitsVendus);
-            $printer->text(sprintf("Top produit : %s\n", substr($topProduit['name'], 0, 35)));
-            $printer->text(sprintf("Quantité vendue : %d\n", $topProduit['quantite']));
-            $printer->text(sprintf("Chiffre d'affaires : %.2f %s\n", $topProduit['total'], $tenant->currency));
-            $printer->text(str_repeat("-", 48) . "\n");
-        }
-        
-        // Panier moyen
-        $panierMoyen = $orders->count() > 0 ? $totalVentes / $orders->count() : 0;
-        $printer->text(sprintf("Panier moyen : %.2f %s\n", $panierMoyen, $tenant->currency));
-        
-        // Nombre d'articles vendus
-        $totalArticles = array_sum(array_column($produitsVendus, 'quantite'));
-        $printer->text(sprintf("Articles vendus : %d\n", $totalArticles));
-        
-        $printer->text("\n");
-
-        // ==================== PIED DE PAGE ====================
-        $printer->setJustification(Printer::JUSTIFY_CENTER);
         $printer->text(str_repeat("=", 48) . "\n");
-        $printer->text("Fin du shift - " . now()->format('d/m/Y H:i:s') . "\n");
-        $printer->text($tenant->ticket_footer_message . "\n");
-        $printer->text("\n\n\n");
-
+        
+        if ($shift->ended_at === null) {
+            $printer->text("*** RAPPORT PROVISOIRE - SHIFT EN COURS ***\n");
+        } else {
+            $printer->text("Fin du shift - " . Carbon::parse($shift->ended_at)->format('d/m/Y H:i:s') . "\n");
+        }
+        $printer->text("\n");
         // Couper le papier
         $printer->cut();
-       
-        
         $printer->close();
 
         // Retourner les données en JSON
         return response()->json([
-            'message' => 'Shift imprimé avec succès',
+            'message' => $shift->ended_at === null ? 'Rapport provisoire imprimé' : 'Shift imprimé avec succès',
             'shift_id' => $shift->id,
+            'shift_status' => $shift->ended_at === null ? 'en_cours' : 'termine',
             'started_at' => $shift->started_at,
+            'ended_at' => $shift->ended_at,
             'duree' => $duration,
             'nombre_commandes' => $orders->count(),
             'ventes' => $totalVentes,
             'charges' => $totalCharges,
             'net' => $net,
             'ventes_par_produit' => $produitsVendus,
-            'total_articles_vendus' => $totalArticles,
-            'panier_moyen' => $panierMoyen,
             'user' => $user,
-            'commandes' => $orders,
             'charges_details' => $charges
         ]);
 
@@ -520,25 +471,23 @@ public function printShift($id)
         
         // En cas d'erreur d'impression, retourner quand même les données
         return response()->json([
-            'message' => 'Shift terminé mais erreur lors de l\'impression',
+            'message' => $shift->ended_at === null ? 'Erreur impression rapport provisoire' : 'Erreur impression shift',
             'error' => $e->getMessage(),
             'shift_id' => $shift->id,
+            'shift_status' => $shift->ended_at === null ? 'en_cours' : 'termine',
             'started_at' => $shift->started_at,
+            'ended_at' => $shift->ended_at,
             'duree' => $duration,
             'nombre_commandes' => $orders->count(),
             'ventes' => $totalVentes,
             'charges' => $totalCharges,
             'net' => $net,
             'ventes_par_produit' => $produitsVendus,
-            'total_articles_vendus' => array_sum(array_column($produitsVendus, 'quantite')),
-            'panier_moyen' => $orders->count() > 0 ? $totalVentes / $orders->count() : 0,
             'user' => $user,
-            'commandes' => $orders,
             'charges_details' => $charges
         ], 500);
     }
 }
-
 
     // ========================
     // Supprimer un shift
