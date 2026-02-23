@@ -157,7 +157,15 @@ function Login() {
   <p className="text-gray-700 text-sm mb-6">
     HlassTech POS est le système <span className="font-semibold">original et officiel</span> de notre entreprise, conçu et développé <span className="font-semibold">par notre équipe interne</span>. 
     Chaque fonctionnalité a été pensée pour répondre aux besoins réels des commerces modernes, avec une attention particulière à la <span className="font-semibold">performance</span>, à la <span className="font-semibold">simplicité d’utilisation</span> et à la <span className="font-semibold">sécurité</span>. 
-    En choisissant HlassTech POS, vous utilisez une solution <span className="font-semibold">100% développée par nous</span>, adaptée à vos opérations quotidiennes et à l’évolution de votre entreprise.
+    <br /><br />
+  <a 
+    href="https://hlasstech.com/contact" 
+    target="_blank" 
+    rel="noopener noreferrer"
+    className="text-blue-600 hover:text-blue-800 font-medium underline underline-offset-2"
+  >
+    Besoin d'aide ? Consulter notre support → hlasstech.com
+  </a>
   </p>
 
   {/* Features */}
