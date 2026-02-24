@@ -24,6 +24,10 @@ function Statistiques() {
   const [shiftStats, setShiftStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [, setFetching] = useState(false);
+  
+  // États pour les chargements des boutons
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [isOpeningDrawer, setIsOpeningDrawer] = useState(false);
 
   const [notification, setNotification] = useState({
     show: false,
@@ -116,33 +120,32 @@ function Statistiques() {
         return <FiShoppingBag className="w-4 h-4" />;
     }
   };
-const opendrawer = () => {
-  try {
-    // Appeler l'API pour ouvrir le tiroir-caisse
-    AxiosClient.post(`/shifts/${shiftStats.shift_id}/openDrawer`)
-      .then(response => {
-        showNotification("success", "Tiroir-caisse ouvert avec succès");
-      })
-      .catch(error => {
-        showNotification("error", "Erreur lors de l'ouverture du tiroir-caisse", error);
-      });
-  }
-  catch (error) {
-    showNotification("error", "Erreur lors de l'ouverture du tiroir-caisse", error);
-  }
-};
-  const printShiftReport = () => {
+
+  const opendrawer = async () => {
+    if (isOpeningDrawer) return; // Empêcher les clics multiples
+    
+    setIsOpeningDrawer(true);
     try {
-      // Appeler l'API pour générer le rapport de shift
-      AxiosClient.post(`/shifts/${shiftStats.shift_id}/printCurrentShift`)
-        .then(response => {
-          showNotification("success", "Rapport de shift généré avec succès");
-        })
-        .catch(error => {
-          showNotification("error", "Erreur lors de la génération du rapport de shift", error);
-        });
+      await AxiosClient.post(`/shifts/${shiftStats.shift_id}/openDrawer`);
+      showNotification("success", "Tiroir-caisse ouvert avec succès");
+    } catch (error) {
+      showNotification("error", "Erreur lors de l'ouverture du tiroir-caisse", error);
+    } finally {
+      setIsOpeningDrawer(false);
+    }
+  };
+
+  const printShiftReport = async () => {
+    if (isPrinting) return; // Empêcher les clics multiples
+    
+    setIsPrinting(true);
+    try {
+      await AxiosClient.post(`/shifts/${shiftStats.shift_id}/printCurrentShift`);
+      showNotification("success", "Rapport de shift généré avec succès");
     } catch (error) {
       showNotification("error", "Erreur lors de la génération du rapport de shift", error);
+    } finally {
+      setIsPrinting(false);
     }
   };
 
@@ -426,12 +429,38 @@ const opendrawer = () => {
               <p className="text-sm text-gray-500">Net</p>
               <p className="text-xl font-bold text-blue-600">{formatAmount(totalVentes - totalCharges)}</p>
             </div>
-            <div className="text-center">
-              <button onClick={printShiftReport} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-150">
-                Raport provisoire du shift
+            <div className="text-center flex gap-2">
+              <button 
+                onClick={printShiftReport} 
+                disabled={isPrinting || isOpeningDrawer}
+                className={`bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-150 flex items-center justify-center min-w-[180px] ${
+                  (isPrinting || isOpeningDrawer) ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                {isPrinting ? (
+                  <>
+                    <FaSpinner className="animate-spin mr-2" />
+                    Impression...
+                  </>
+                ) : (
+                  'Rapport provisoire du shift'
+                )}
               </button>
-              <button onClick={opendrawer} className="ml-2 bg-cyan-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-cyan-300 transition duration-150">
-                Tirroire caisse
+              <button 
+                onClick={opendrawer} 
+                disabled={isOpeningDrawer || isPrinting}
+                className={`ml-2 bg-cyan-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-cyan-300 transition duration-150 flex items-center justify-center min-w-[120px] ${
+                  (isOpeningDrawer || isPrinting) ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                {isOpeningDrawer ? (
+                  <>
+                    <FaSpinner className="animate-spin mr-2" />
+                    Ouverture...
+                  </>
+                ) : (
+                  'Tiroir caisse'
+                )}
               </button>
             </div>
           </div>
