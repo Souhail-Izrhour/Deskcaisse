@@ -15,6 +15,11 @@ function Layout() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [shiftActive, setShiftActive] = useState(false);
   const [shiftLoading, setShiftLoading] = useState(true);
+  
+  // Nouveaux états pour les chargements
+  const [isEndingShift, setIsEndingShift] = useState(false);
+  const [isStartingShift, setIsStartingShift] = useState(false);
+  
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -106,6 +111,9 @@ function Layout() {
   };
 
   const startShift = async () => {
+    if (isStartingShift) return; // Empêcher les clics multiples
+    
+    setIsStartingShift(true);
     try {
       const response = await AxiosClient.post("/shifts/start");
       console.log("Shift démarré :", response.data);
@@ -118,10 +126,15 @@ function Layout() {
         "Erreur",
         error.response?.data?.message || "Impossible de démarrer le shift"
       );
+    } finally {
+      setIsStartingShift(false);
     }
   };
 
   const endShift = async () => {
+    if (isEndingShift) return; // Empêcher les clics multiples
+    
+    setIsEndingShift(true);
     try {
       const response = await AxiosClient.post("/shifts/end");
       console.log("Shift terminé :", response.data);
@@ -135,6 +148,8 @@ function Layout() {
         "Erreur",
         error.response?.data?.message || "Impossible de terminer le shift"
       );
+    } finally {
+      setIsEndingShift(false);
       setShowEndShiftModal(false);
     }
   };
@@ -227,38 +242,51 @@ function Layout() {
             {!shiftActive && (
               <button
                 onClick={startShift}
-                className="w-full p-3 rounded-xl hover:bg-gray-200 text-green-700 transition-all duration-200 flex items-center justify-center mb-2"
-                title="Démarrer le shift"
+                disabled={isStartingShift}
+                className={`w-full p-3 rounded-xl hover:bg-gray-200 text-green-700 transition-all duration-200 flex items-center justify-center mb-2 ${
+                  isStartingShift ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                title={isStartingShift ? "Démarrage en cours..." : "Démarrer le shift"}
               >
-                <FiPlay size={20} />
+                {isStartingShift ? (
+                  <FaSpinner className="animate-spin" size={20} />
+                ) : (
+                  <FiPlay size={20} />
+                )}
               </button>
             )}
 
             {shiftActive && (
               <button
                 onClick={openEndShiftConfirmation}
-                className="w-full p-3 rounded-xl hover:bg-gray-200 text-red-700 transition-all duration-200 flex items-center justify-center mb-2"
-                title="Terminer le shift"
+                disabled={isEndingShift}
+                className={`w-full p-3 rounded-xl hover:bg-gray-200 text-red-700 transition-all duration-200 flex items-center justify-center mb-2 ${
+                  isEndingShift ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                title={isEndingShift ? "Terminaison en cours..." : "Terminer le shift"}
               >
-                <FiStopCircle size={20} />
+                {isEndingShift ? (
+                  <FaSpinner className="animate-spin" size={20} />
+                ) : (
+                  <FiStopCircle size={20} />
+                )}
               </button>
             )}
           </>
         )}
-{!shiftLoading && !shiftActive && (
-
-
-        <button
-          onClick={() => setShowLogoutModal(true)}
-          className="w-full p-3 rounded-xl hover:bg-gray-200 text-gray-700 transition-all duration-200 flex items-center justify-center"
-          title="Déconnexion"
-        >
-          <FiLogOut size={20} />
-        </button>
-)}
+        {!shiftLoading && !shiftActive && (
+          <button
+            onClick={() => setShowLogoutModal(true)}
+            className="w-full p-3 rounded-xl hover:bg-gray-200 text-gray-700 transition-all duration-200 flex items-center justify-center"
+            title="Déconnexion"
+          >
+            <FiLogOut size={20} />
+          </button>
+        )}
       </div>
     </div>
   );
+
   // Rendu pour la version desktop complète
   const renderDesktopSidebar = () => (
     <aside className={`flex flex-col h-screen bg-gradient-to-b from-white to-blue-200 border-r border-gray-200 transition-all duration-300 rounded-r-3xl ${isCollapsed ? 'w-16' : 'w-48'}`}>
@@ -371,7 +399,6 @@ function Layout() {
             )}
           </div>
         )}
-
       </nav>
 
       {/* Footer avec bouton déconnexion */}
@@ -391,40 +418,68 @@ function Layout() {
         ) : (
           <>
             {!shiftActive && (
-              <button onClick={startShift} className={`w-full ${isCollapsed ? 'p-3 justify-center' : 'py-2 px-2 justify-center gap-3'} flex items-center bg-green-100 hover:bg-green-200 text-green-700 rounded-xl transition-all duration-200 font-medium group mb-2`}
-                title={isCollapsed ? "Démarrer le shift" : ""}
+              <button 
+                onClick={startShift} 
+                disabled={isStartingShift}
+                className={`w-full ${isCollapsed ? 'p-3 justify-center' : 'py-2 px-2 justify-center gap-3'} flex items-center bg-green-100 hover:bg-green-200 text-green-700 rounded-xl transition-all duration-200 font-medium group mb-2 ${
+                  isStartingShift ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                title={isCollapsed ? (isStartingShift ? "Démarrage..." : "Démarrer le shift") : ""}
               >
-                <FiPlay className="text-green-500 group-hover:text-green-600 transition-colors" size={isCollapsed ? 20 : 18} />
-                {!isCollapsed && (
-                  <span className="group-hover:text-green-600 transition-colors">Démarrer le shift</span>
+                {isStartingShift ? (
+                  <>
+                    <FaSpinner className="animate-spin text-green-500" size={isCollapsed ? 20 : 18} />
+                    {!isCollapsed && <span>Démarrage...</span>}
+                  </>
+                ) : (
+                  <>
+                    <FiPlay className="text-green-500 group-hover:text-green-600 transition-colors" size={isCollapsed ? 20 : 18} />
+                    {!isCollapsed && (
+                      <span className="group-hover:text-green-600 transition-colors">Démarrer le shift</span>
+                    )}
+                  </>
                 )}
               </button>
             )}
 
             {shiftActive && (
-              <button onClick={openEndShiftConfirmation} className={`w-full ${isCollapsed ? 'p-3 justify-center' : 'py-2 px-2 justify-center gap-3'} flex items-center bg-red-100 hover:bg-red-200 text-red-700 rounded-xl transition-all duration-200 font-medium group mb-2`}
-                title={isCollapsed ? "Terminer le shift" : ""}
+              <button 
+                onClick={openEndShiftConfirmation} 
+                disabled={isEndingShift}
+                className={`w-full ${isCollapsed ? 'p-3 justify-center' : 'py-2 px-2 justify-center gap-3'} flex items-center bg-red-100 hover:bg-red-200 text-red-700 rounded-xl transition-all duration-200 font-medium group mb-2 ${
+                  isEndingShift ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                title={isCollapsed ? (isEndingShift ? "Terminaison..." : "Terminer le shift") : ""}
               >
-                <FiStopCircle className="text-red-500 group-hover:text-red-600 transition-colors" size={isCollapsed ? 20 : 18} />
-                {!isCollapsed && (
-                  <span className="group-hover:text-red-600 transition-colors">Terminer le shift</span>
+                {isEndingShift ? (
+                  <>
+                    <FaSpinner className="animate-spin text-red-500" size={isCollapsed ? 20 : 18} />
+                    {!isCollapsed && <span>Terminaison...</span>}
+                  </>
+                ) : (
+                  <>
+                    <FiStopCircle className="text-red-500 group-hover:text-red-600 transition-colors" size={isCollapsed ? 20 : 18} />
+                    {!isCollapsed && (
+                      <span className="group-hover:text-red-600 transition-colors">Terminer le shift</span>
+                    )}
+                  </>
                 )}
               </button>
             )}
           </>
         )}
-{!shiftLoading && !shiftActive && (
-        <button
-          onClick={() => setShowLogoutModal(true)}
-          className={`w-full ${isCollapsed ? 'p-3 justify-center' : 'py-2 px-2 justify-center gap-3'} flex items-center bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all duration-200 font-medium group`}
-          title={isCollapsed ? "Déconnexion" : ""}
-        >
-          <FiLogOut className="text-gray-500 group-hover:text-red-500 transition-colors" size={isCollapsed ? 20 : 18} />
-          {!isCollapsed && (
-            <span className="group-hover:text-red-600 transition-colors">Déconnexion</span>
-          )}
-        </button>
-)}
+        {!shiftLoading && !shiftActive && (
+          <button
+            onClick={() => setShowLogoutModal(true)}
+            className={`w-full ${isCollapsed ? 'p-3 justify-center' : 'py-2 px-2 justify-center gap-3'} flex items-center bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all duration-200 font-medium group`}
+            title={isCollapsed ? "Déconnexion" : ""}
+          >
+            <FiLogOut className="text-gray-500 group-hover:text-red-500 transition-colors" size={isCollapsed ? 20 : 18} />
+            {!isCollapsed && (
+              <span className="group-hover:text-red-600 transition-colors">Déconnexion</span>
+            )}
+          </button>
+        )}
       </div>
     </aside>
   );
@@ -448,12 +503,12 @@ function Layout() {
 
         {/* Bouton de déconnexion mobile */}
         {!shiftLoading && !shiftActive && (
-        <button
-          onClick={() => setShowLogoutModal(true)}
-          className="p-2 rounded-lg hover:bg-gray-100 transition-all duration-200"
-        >
-          <FiLogOut size={20} className="text-gray-600" />
-        </button>
+          <button
+            onClick={() => setShowLogoutModal(true)}
+            className="p-2 rounded-lg hover:bg-gray-100 transition-all duration-200"
+          >
+            <FiLogOut size={20} className="text-gray-600" />
+          </button>
         )}
       </div>
 
@@ -543,36 +598,60 @@ function Layout() {
               {!shiftActive && (
                 <button
                   onClick={startShift}
-                  className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-green-100 hover:bg-green-200 text-green-700 rounded-xl transition-all duration-200 font-medium mb-2"
+                  disabled={isStartingShift}
+                  className={`w-full flex items-center justify-center gap-3 py-3 px-4 bg-green-100 hover:bg-green-200 text-green-700 rounded-xl transition-all duration-200 font-medium mb-2 ${
+                    isStartingShift ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
-                  <FiPlay className="text-green-500" size={18} />
-                  <span>Démarrer le shift</span>
+                  {isStartingShift ? (
+                    <>
+                      <FaSpinner className="animate-spin text-green-500" size={18} />
+                      <span>Démarrage...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FiPlay className="text-green-500" size={18} />
+                      <span>Démarrer le shift</span>
+                    </>
+                  )}
                 </button>
               )}
 
               {shiftActive && (
                 <button
                   onClick={openEndShiftConfirmation}
-                  className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-red-100 hover:bg-red-200 text-red-700 rounded-xl transition-all duration-200 font-medium mb-2"
+                  disabled={isEndingShift}
+                  className={`w-full flex items-center justify-center gap-3 py-3 px-4 bg-red-100 hover:bg-red-200 text-red-700 rounded-xl transition-all duration-200 font-medium mb-2 ${
+                    isEndingShift ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
-                  <FiStopCircle className="text-red-500" size={18} />
-                  <span>Terminer le shift</span>
+                  {isEndingShift ? (
+                    <>
+                      <FaSpinner className="animate-spin text-red-500" size={18} />
+                      <span>Terminaison...</span>
+                    </>
+                  ) : (
+                    <>
+                      <FiStopCircle className="text-red-500" size={18} />
+                      <span>Terminer le shift</span>
+                    </>
+                  )}
                 </button>
               )}
             </>
           )}
-{!shiftLoading && !shiftActive && (
-          <button
-            onClick={() => {
-              setShowLogoutModal(true);
-              setShowMobileMenu(false);
-            }}
-            className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all duration-200 font-medium"
-          >
-            <FiLogOut className="text-gray-500" size={18} />
-            <span>Déconnexion</span>
-          </button>
-)}
+          {!shiftLoading && !shiftActive && (
+            <button
+              onClick={() => {
+                setShowLogoutModal(true);
+                setShowMobileMenu(false);
+              }}
+              className="w-full flex items-center justify-center gap-3 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all duration-200 font-medium"
+            >
+              <FiLogOut className="text-gray-500" size={18} />
+              <span>Déconnexion</span>
+            </button>
+          )}
         </div>
       </aside>
     </>
@@ -626,9 +705,13 @@ function Layout() {
         message="Êtes-vous sûr de vouloir terminer ce shift ?"
         confirmText="Terminer le Shift"
         cancelText="Annuler"
-        loading={false}
+        loading={isEndingShift} // Passer l'état de chargement au modal
         onConfirm={endShift}
-        onCancel={() => setShowEndShiftModal(false)}
+        onCancel={() => {
+          if (!isEndingShift) {
+            setShowEndShiftModal(false);
+          }
+        }}
         type="info"
       />
 
