@@ -19,6 +19,7 @@ function Layout() {
   // Nouveaux états pour les chargements
   const [isEndingShift, setIsEndingShift] = useState(false);
   const [isStartingShift, setIsStartingShift] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -38,11 +39,30 @@ function Layout() {
     setActivePath(location.pathname);
   }, [location.pathname]);
 
-  const handleLogout = () => {
+ const handleLogout = async () => {
+  if (isLoggingOut) return; // Empêcher les clics multiples
+  
+  setIsLoggingOut(true);
+  try {
+    // Appel API pour la déconnexion côté serveur
+    await AxiosClient.post("/logout");
+    console.log("Déconnexion réussie côté serveur");
+    showNotification("success", "Succès", "Déconnexion réussie");
+  } catch (error) {
+    console.error("Erreur lors de la déconnexion côté serveur:", error);
+    showNotification(
+      "error",
+      "Erreur",
+      "Erreur lors de la déconnexion, mais vous serez redirigé"
+    );
+  } finally {
+    // Nettoyage du localStorage
     localStorage.clear();
+    // Redirection vers la page de login
     navigate("/");
-  };
-
+    setIsLoggingOut(false);
+  }
+};
   // Détecter si on est sur mobile
   useEffect(() => {
     const handleResize = () => {
@@ -683,20 +703,24 @@ function Layout() {
       </div>
 
       {/* Modal de confirmation de déconnexion */}
-      <ConfirmationModal
-        show={showLogoutModal}
-        title="Déconnexion"
-        message="Êtes-vous sûr de vouloir vous déconnecter ?"
-        confirmText="Déconnexion"
-        cancelText="Annuler"
-        loading={false}
-        onConfirm={() => {
-          handleLogout();
+     <ConfirmationModal
+      show={showLogoutModal}
+      title="Déconnexion"
+      message="Êtes-vous sûr de vouloir vous déconnecter ?"
+      confirmText="Déconnexion"
+      cancelText="Annuler"
+      loading={isLoggingOut} // Ajoutez cette ligne
+      onConfirm={() => {
+        handleLogout();
+        // Ne pas fermer le modal ici, il sera fermé après l'API
+      }}
+      onCancel={() => {
+        if (!isLoggingOut) {
           setShowLogoutModal(false);
-        }}
-        onCancel={() => setShowLogoutModal(false)}
-        type="warning"
-      />
+        }
+      }}
+      type="warning"
+    />
 
       {/* Modal de confirmation pour arrêter le shift */}
       <ConfirmationModal

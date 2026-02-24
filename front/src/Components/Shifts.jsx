@@ -356,16 +356,21 @@ function Shifts() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           {renderNetAmount(shift.ventes, shift.charges)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button
-                            onClick={() => openDeleteModal(shift)}
-                            className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-lg text-sm font-medium transition duration-150 flex items-center ml-auto"
-                          >
-                            <FiTrash2 className="w-4 h-4 mr-1" />
-                            Supprimer
-                          </button>
-                          
-                        </td>
+                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    {!isActive ? ( // N'afficher que si le shift n'est PAS actif
+                      <button
+                        onClick={() => openDeleteModal(shift)}
+                        className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-lg text-sm font-medium transition duration-150 flex items-center ml-auto"
+                      >
+                        <FiTrash2 className="w-4 h-4 mr-1" />
+                        Supprimer
+                      </button>
+                    ) : (
+                      <span className="text-gray-400 text-sm italic px-3 py-2 block text-right">
+                        Shift actif
+                      </span>
+                    )}
+                  </td>
                       </tr>
                     );
                   })
