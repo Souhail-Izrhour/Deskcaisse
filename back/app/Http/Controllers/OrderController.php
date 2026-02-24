@@ -215,6 +215,8 @@ private function printTicket(Order $order)
             $printer->text(str_repeat("-", 48) . "\n");
 
         // ==================== PAIEMENT & SERVEUR ====================
+        $orderNumberInShift = $order->shift->orders()->where('id', '<=', $order->id)->count();
+        $printer->text("COMMANDE N°: " . $orderNumberInShift . "\n");        
         $printer->text("Paiement: " . ($order->payment_method ?? "Espèces") . "\n");
         $printer->text("Opérateur: " . (($order->user->prenom ?? '') . ' ' . ($order->user->nom ?? '')) . "\n");        // ==================== PIED DE PAGE ====================
         $printer->text(str_repeat("=", 48) . "\n");
@@ -230,7 +232,9 @@ private function printTicket(Order $order)
             // Informations de base
             $printer->setEmphasis(true);
             $printer->setTextSize(1, 1);
-            $printer->text("COMMANDE N°: " . $order->id . "\n");
+            // Récupérer le nombre de commandes déjà faites dans ce shift
+            $orderNumberInShift = $order->shift->orders()->where('id', '<=', $order->id)->count();
+            $printer->text("COMMANDE N°: " . $orderNumberInShift . "\n");
             $printer->setEmphasis(false);
             $printer->text("Date: " . date('d/m/Y H:i') . "\n");
             $printer->text("Serveur: " . (($order->user->prenom ?? '') . ' ' . ($order->user->nom ?? '')) . "\n");

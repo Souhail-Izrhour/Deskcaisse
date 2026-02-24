@@ -278,7 +278,7 @@ public function printCurrentShift($id)
         // Nom établissement en grand
         $printer->setEmphasis(true);
         $printer->setTextSize(2, 2);
-        $printer->text(strtoupper($tenant->nom) . "\n");
+        $printer->text(strtoupper($tenant->nom) . "\n\n");
         $printer->setTextSize(1, 1);
         $printer->setEmphasis(false);
         
