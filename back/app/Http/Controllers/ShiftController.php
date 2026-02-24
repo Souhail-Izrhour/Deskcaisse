@@ -99,7 +99,7 @@ public function end()
 
     // ========== IMPRESSION DU RAPPORT FINAL ==========
     try {
-        $this->printShiftReport($shift);
+        $this->printShiftReportwhileEndingshift($shift);
     } catch (\Exception $e) {
         \Log::error('Erreur impression rapport final: ' . $e->getMessage());
         // On continue même si l'impression échoue
@@ -110,11 +110,40 @@ public function end()
         'shift' => $shift
     ]);
 }
+// ========================
+// Imprimer un shift spécifique (terminé)
+// ========================
+public function printShift(Shift $shift)
+{
+    // Vérifier que l'utilisateur a accès à ce shift
+    if ($shift->tenant_id !== Auth::user()->tenant_id) {
+        return response()->json(['message' => 'Accès refusé.'], 403);
+    }
 
+    // Optionnel : vérifier que le shift est terminé
+    if ($shift->ended_at === null) {
+        return response()->json(['message' => 'Impossible d\'imprimer un rapport pour un shift en cours. Utilisez "printCurrentShift" à la place.'], 400);
+    }
+
+    try {
+        $this->printShiftReportwhileEndingshift($shift);
+        
+        return response()->json([
+            'message' => 'Shift imprimé avec succès',
+            'shift_id' => $shift->id
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('Erreur impression shift: ' . $e->getMessage());
+        return response()->json([
+            'message' => 'Erreur lors de l\'impression',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
 // ========================
 // Méthode utilitaire pour imprimer un rapport de shift
 // ========================
-private function printShiftReport(Shift $shift)
+private function printShiftReportwhileEndingshift(Shift $shift)
 {
     $user = $shift->user;
     $tenant = Tenant::find($shift->tenant_id);

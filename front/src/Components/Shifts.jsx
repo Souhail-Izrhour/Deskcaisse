@@ -4,13 +4,14 @@ import { useErrorHandler } from "../hooks/useErrorHandler";
 import SubscriptionModal from "../Modals/SubscriptionModal";
 import ConfirmationModal from "../Modals/ConfirmationModal";
 import NotificationModal from "../Modals/NotificationModal";
-import { FiTrash2, FiUser,FiTrendingUp,FiTrendingDown} from "react-icons/fi";
-import { FaSpinner, FaUserClock } from "react-icons/fa";
+import { FiTrash2, FiUser, FiTrendingUp, FiTrendingDown, FiPrinter } from "react-icons/fi"; // Ajout de FiPrinter
+import { FaSpinner, FaUserClock} from "react-icons/fa"; // Ajout de FaPrint
 
 function Shifts() {
   // ========== STATE ==========
   const [shifts, setShifts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [printingShiftId, setPrintingShiftId] = useState(null); // État pour suivre quel shift est en cours d'impression
   
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [shiftToDelete, setShiftToDelete] = useState(null);
@@ -54,33 +55,33 @@ function Shifts() {
   }, []);
 
   // ========== DATA FETCHING ==========
- const fetchShifts = useCallback(async () => {
-  setLoading(true);
-  try {
-    const { data } = await AxiosClient.get("/shifts");
-    const shiftsData = Array.isArray(data.data) ? data.data : data;
-    
-    // Trier les shifts : actifs en premier, puis par date de début décroissante
-    const sortedShifts = [...shiftsData].sort((a, b) => {
-      // Si a est actif et b ne l'est pas, a passe avant
-      if (a.ended_at === null && b.ended_at !== null) return -1;
-      // Si b est actif et a ne l'est pas, b passe avant
-      if (b.ended_at === null && a.ended_at !== null) return 1;
+  const fetchShifts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data } = await AxiosClient.get("/shifts");
+      const shiftsData = Array.isArray(data.data) ? data.data : data;
       
-      // Si les deux sont actifs ou les deux sont terminés, trier par date de début décroissante
-      const dateA = new Date(a.started_at);
-      const dateB = new Date(b.started_at);
-      return dateB - dateA; // Les plus récents en premier
-    });
-    
-    setShifts(sortedShifts);
-  } catch (error) {
-    console.error("Erreur fetch shifts:", error);
-    showNotification("error", "Erreur lors du chargement des shifts", error);
-  } finally {
-    setLoading(false);
-  }
-}, [showNotification]);
+      // Trier les shifts : actifs en premier, puis par date de début décroissante
+      const sortedShifts = [...shiftsData].sort((a, b) => {
+        // Si a est actif et b ne l'est pas, a passe avant
+        if (a.ended_at === null && b.ended_at !== null) return -1;
+        // Si b est actif et a ne l'est pas, b passe avant
+        if (b.ended_at === null && a.ended_at !== null) return 1;
+        
+        // Si les deux sont actifs ou les deux sont terminés, trier par date de début décroissante
+        const dateA = new Date(a.started_at);
+        const dateB = new Date(b.started_at);
+        return dateB - dateA; // Les plus récents en premier
+      });
+      
+      setShifts(sortedShifts);
+    } catch (error) {
+      console.error("Erreur fetch shifts:", error);
+      showNotification("error", "Erreur lors du chargement des shifts", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [showNotification]);
 
   useEffect(() => {
     fetchShifts();
@@ -142,6 +143,27 @@ function Shifts() {
     } finally {
       setLoading(false);
       closeDeleteModal();
+    }
+  };
+
+  // ========== IMPRESSION SHIFT ==========
+  const printShift = async (shift) => {
+    // Vérifier que le shift est terminé
+    if (shift.ended_at === null) {
+      showNotification("warning", "Impossible d'imprimer un shift en cours. Utilisez l'impression depuis la page active.");
+      return;
+    }
+
+    setPrintingShiftId(shift.id);
+    try {
+      await AxiosClient.post(`/shifts/${shift.id}/print`);
+      showNotification("success", "Shift imprimé avec succès");
+    } catch (error) {
+      console.error("Erreur impression shift:", error);
+      const errorMsg = error.response?.data?.message || "Erreur lors de l'impression";
+      showNotification("error", errorMsg, error);
+    } finally {
+      setPrintingShiftId(null);
     }
   };
 
@@ -262,14 +284,13 @@ function Shifts() {
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Fin
                   </th>
-                  
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Ventes / Charges
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Net
                   </th>
-                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider" colSpan="2">
                     Actions
                   </th>
                 </tr>
@@ -278,7 +299,7 @@ function Shifts() {
                 {loading ? (
                   // Spinner dans le tableau pendant le chargement
                   <tr>
-                    <td colSpan="8" className="px-6 py-12 text-center">
+                    <td colSpan="9" className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center justify-center">
                         <FaSpinner className="animate-spin h-10 w-10 text-blue-600 mb-4" />
                         <p className="text-gray-600">Chargement des shifts...</p>
@@ -288,7 +309,7 @@ function Shifts() {
                 ) : shifts.length === 0 ? (
                   // Message quand il n'y a pas de shifts
                   <tr>
-                    <td colSpan="8" className="px-6 py-12 text-center">
+                    <td colSpan="9" className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center justify-center">
                         <div className="w-16 h-16 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl flex items-center justify-center mb-4">
                           <FaUserClock className="w-8 h-8 text-purple-400" />
@@ -356,21 +377,42 @@ function Shifts() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           {renderNetAmount(shift.ventes, shift.charges)}
                         </td>
-                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    {!isActive ? ( // N'afficher que si le shift n'est PAS actif
-                      <button
-                        onClick={() => openDeleteModal(shift)}
-                        className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-lg text-sm font-medium transition duration-150 flex items-center ml-auto"
-                      >
-                        <FiTrash2 className="w-4 h-4 mr-1" />
-                        Supprimer
-                      </button>
-                    ) : (
-                      <span className="text-gray-400 text-sm italic px-3 py-2 block text-right">
-                        Shift actif
-                      </span>
-                    )}
-                  </td>
+                        {/* Bouton d'impression - uniquement pour les shifts terminés */}
+                        <td className="px-2 py-4 whitespace-nowrap text-center">
+                          {!isActive && (
+                            <button
+                              onClick={() => printShift(shift)}
+                              disabled={printingShiftId === shift.id}
+                              className={`inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium transition duration-150 ${
+                                printingShiftId === shift.id
+                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                  : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                              }`}
+                              title="Imprimer le rapport"
+                            >
+                              {printingShiftId === shift.id ? (
+                                <FaSpinner className="animate-spin w-4 h-4" />
+                              ) : (
+                                <FiPrinter className="w-4 h-4" />
+                              )}
+                            </button>
+                          )}
+                        </td>
+                        <td className="px-2 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          {!isActive ? (
+                            <button
+                              onClick={() => openDeleteModal(shift)}
+                              className="text-red-600 hover:text-red-900 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-lg text-sm font-medium transition duration-150 flex items-center"
+                            >
+                              <FiTrash2 className="w-4 h-4 mr-1" />
+                              Supprimer
+                            </button>
+                          ) : (
+                            <span className="text-gray-400 text-sm italic px-3 py-2 block text-right">
+                              Shift actif
+                            </span>
+                          )}
+                        </td>
                       </tr>
                     );
                   })
@@ -481,14 +523,35 @@ function Shifts() {
                           </div>
                         </div>
 
-                        {/* Action de suppression */}
-                        <div className="flex justify-end pt-4 border-t border-gray-100">
+                        {/* Actions */}
+                        <div className="flex gap-2 pt-4 border-t border-gray-100">
+                          {/* Bouton d'impression pour mobile */}
+                          {!isActive && (
+                            <button
+                              onClick={() => printShift(shift)}
+                              disabled={printingShiftId === shift.id}
+                              className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition duration-150 flex items-center justify-center ${
+                                printingShiftId === shift.id
+                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                  : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                              }`}
+                            >
+                              {printingShiftId === shift.id ? (
+                                <FaSpinner className="animate-spin w-4 h-4 mr-2" />
+                              ) : (
+                                <FiPrinter className="w-4 h-4 mr-2" />
+                              )}
+                              Imprimer
+                            </button>
+                          )}
+                          
+                          {/* Bouton de suppression */}
                           <button
                             onClick={() => openDeleteModal(shift)}
-                            className="px-4 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-sm font-medium transition duration-150 flex items-center justify-center w-full"
+                            className="flex-1 px-4 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-sm font-medium transition duration-150 flex items-center justify-center"
                           >
                             <FiTrash2 className="w-4 h-4 mr-2" />
-                            Supprimer ce shift
+                            Supprimer
                           </button>
                         </div>
                       </div>
