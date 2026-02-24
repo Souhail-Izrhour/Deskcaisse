@@ -28,42 +28,85 @@ class ProductController extends Controller
      * Créer un produit
      */
     public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name'        => 'required|string|max:150',
-            'price'       => 'required|numeric|min:0',
-            'stock'       => 'nullable|integer|min:0',
-            'barcode'     => 'nullable|string|max:50',
-            'category_id' => 'required|exists:categories,id',
-            'image'       => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+{
+    $validated = $request->validate([
+        'name'        => 'required|string|max:150',
+        'price'       => 'required|numeric|min:0',
+        'stock'       => 'nullable|integer|min:0',
+        'barcode'     => 'nullable|string|max:50',
+        'category_id' => 'required|exists:categories,id',
+        'image'       => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+    ]);
+
+    $tenantId = $request->user()->tenant_id;
+
+    // Vérification catégorie du tenant
+    Category::where('id', $validated['category_id'])
+        ->where('tenant_id', $tenantId)
+        ->firstOrFail();
+
+    // ================================
+    // Check produit soft-deleted existant
+    // ================================
+    $deletedProduct = Product::withTrashed()
+        ->where('tenant_id', $tenantId)
+        ->where('name', $validated['name'])
+        ->first();
+
+    if ($deletedProduct?->trashed()) {
+        // Restaurer le produit existant
+        $deletedProduct->restore();
+
+        // Mettre à jour les champs avec les nouvelles infos
+        $deletedProduct->update([
+            'price'       => $validated['price'],
+            'stock'       => $validated['stock'] ?? 0,
+            'barcode'     => $validated['barcode'] ?? $deletedProduct->barcode,
+            'category_id' => $validated['category_id'],
         ]);
 
-        // Vérification catégorie du tenant
-        Category::where('id', $validated['category_id'])
-            ->where('tenant_id', $request->user()->tenant_id)
-            ->firstOrFail();
+        // Gestion de l'image
+        if ($request->hasFile('image')) {
+            if ($deletedProduct->image && Storage::disk('public')->exists($deletedProduct->image)) {
+                Storage::disk('public')->delete($deletedProduct->image);
+            }
 
-         if ($request->hasFile('image')) {
-        $tenantId = $request->user()->tenant_id;
+            $validated['image'] = $request->file('image')->store(
+                "tenants/{$tenantId}/products",
+                'public'
+            );
 
-         $validated['image'] = $request->file('image')->store(
-        "tenants/{$tenantId}/products",
-        'public'
-      );
-     }
-
-
-        $validated['tenant_id'] = $request->user()->tenant_id;
-        $validated['stock'] = $validated['stock'] ?? 0;
-
-        $product = Product::create($validated);
+            $deletedProduct->update(['image' => $validated['image']]);
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Produit créé avec succès.',
-            'data' => $product->load('category'),
-        ], 201);
+            'message' => 'Produit restauré et mis à jour avec succès.',
+            'data'    => $deletedProduct->load('category'),
+        ], 200);
     }
+
+    // ================================
+    // Si pas de produit supprimé, créer un nouveau
+    // ================================
+    if ($request->hasFile('image')) {
+        $validated['image'] = $request->file('image')->store(
+            "tenants/{$tenantId}/products",
+            'public'
+        );
+    }
+
+    $validated['tenant_id'] = $tenantId;
+    $validated['stock'] = $validated['stock'] ?? 0;
+
+    $product = Product::create($validated);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Produit créé avec succès.',
+        'data'    => $product->load('category'),
+    ], 201);
+}
 
     /**
      * Afficher un produit

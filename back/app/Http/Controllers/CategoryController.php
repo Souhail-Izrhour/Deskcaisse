@@ -21,32 +21,67 @@ class CategoryController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'name'  => 'required|string|max:100|unique:categories,name,NULL,id,tenant_id,' . $request->user()->tenant_id,
-            'image' => 'nullable|image|max:2048',
-        ]);
+{
+    $tenantId = $request->user()->tenant_id;
 
+    $validated = $request->validate([
+        'name'  => 'required|string|max:100',
+        'image' => 'nullable|image|max:2048',
+    ]);
+
+    // ================================
+    // Vérifier si une catégorie soft-deleted existe
+    // ================================
+    $deletedCategory = Category::withTrashed()
+        ->where('tenant_id', $tenantId)
+        ->where('name', $validated['name'])
+        ->first();
+
+    if ($deletedCategory?->trashed()) {
+        // Restaurer la catégorie
+        $deletedCategory->restore();
+
+        // Mettre à jour l'image si fourni
         if ($request->hasFile('image')) {
-         $tenantId = $request->user()->tenant_id;
+            if ($deletedCategory->image && Storage::disk('public')->exists($deletedCategory->image)) {
+                Storage::disk('public')->delete($deletedCategory->image);
+            }
 
-         $validated['image'] = $request->file('image')->store(
-        "tenants/{$tenantId}/categories",
-        'public'
-    );
-    }
+            $validated['image'] = $request->file('image')->store(
+                "tenants/{$tenantId}/categories",
+                'public'
+            );
 
-
-        $validated['tenant_id'] = $request->user()->tenant_id;
-
-        $category = Category::create($validated);
+            $deletedCategory->update(['image' => $validated['image']]);
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Catégorie créée avec succès.',
-            'data' => $category,
-        ], 201);
+            'message' => 'Catégorie restaurée et mise à jour avec succès.',
+            'data' => $deletedCategory,
+        ], 200);
     }
+
+    // ================================
+    // Sinon créer une nouvelle catégorie
+    // ================================
+    if ($request->hasFile('image')) {
+        $validated['image'] = $request->file('image')->store(
+            "tenants/{$tenantId}/categories",
+            'public'
+        );
+    }
+
+    $validated['tenant_id'] = $tenantId;
+
+    $category = Category::create($validated);
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Catégorie créée avec succès.',
+        'data' => $category,
+    ], 201);
+}
 
     public function show(Category $category)
     {
