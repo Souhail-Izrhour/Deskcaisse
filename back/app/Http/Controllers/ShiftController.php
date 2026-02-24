@@ -759,6 +759,284 @@ public function printCurrentShift($id)
     }
 }
 
+// ========================
+// Imprimer un rapport personnalisé (période)
+// ========================
+public function printPeriodReport(Request $request)
+{
+    $tenantId = Auth::user()->tenant_id;
+    
+    // Validation
+    $request->validate([
+        'start_date' => 'required|date',
+        'end_date' => 'required|date|after_or_equal:start_date',
+        'user_id' => 'nullable|exists:users,id'
+    ]);
+    
+    // Récupérer les shifts dans la période
+    $shiftsQuery = Shift::with('user')
+        ->where('tenant_id', $tenantId)
+        ->whereDate('started_at', '>=', $request->start_date)
+        ->whereDate('started_at', '<=', $request->end_date);
+    
+    if ($request->has('user_id') && !empty($request->user_id)) {
+        $shiftsQuery->where('user_id', $request->user_id);
+    }
+    
+    $shifts = $shiftsQuery->orderBy('started_at')->get();
+    
+    if ($shifts->isEmpty()) {
+        return response()->json(['message' => 'Aucun shift trouvé pour cette période'], 404);
+    }
+    
+    // Récupérer toutes les commandes et charges de la période
+    $startDate = Carbon::parse($request->start_date)->startOfDay();
+    $endDate = Carbon::parse($request->end_date)->endOfDay();
+    
+    $orders = Order::with('orderItems.product')
+        ->where('tenant_id', $tenantId)
+        ->whereBetween('created_at', [$startDate, $endDate]);
+    
+    $charges = Charge::where('tenant_id', $tenantId)
+        ->whereBetween('created_at', [$startDate, $endDate]);
+    
+    if ($request->has('user_id') && !empty($request->user_id)) {
+        $orders->where('user_id', $request->user_id);
+        $charges->where('user_id', $request->user_id);
+    }
+    
+    $orders = $orders->get();
+    $charges = $charges->get();
+    
+    $tenant = Tenant::find($tenantId);
+    
+    // Calcul des ventes par produit
+    $produitsVendus = [];
+    foreach ($orders as $order) {
+        foreach ($order->orderItems as $item) {
+            $productId = $item->product_id;
+            $productName = $item->product->name ?? $item->product_name;
+            
+            if (!isset($produitsVendus[$productId])) {
+                $produitsVendus[$productId] = [
+                    'name' => $productName,
+                    'quantite' => 0,
+                    'total' => 0,
+                    'prix_unitaire' => $item->unit_price
+                ];
+            }
+            
+            $produitsVendus[$productId]['quantite'] += $item->quantity;
+            $produitsVendus[$productId]['total'] += $item->total_row;
+        }
+    }
+    
+    uasort($produitsVendus, function($a, $b) {
+        return $b['total'] <=> $a['total'];
+    });
+    
+    try {
+        $connector = new WindowsPrintConnector("ticket-thermique");
+        $printer = new Printer($connector);
+        
+        // ==================== EN-TÊTE ====================
+        $printer->setJustification(Printer::JUSTIFY_CENTER);
+        $printer->setEmphasis(true);
+        $printer->setTextSize(2, 2);
+        $printer->text(strtoupper($tenant->nom) . "\n\n");
+        $printer->setTextSize(1, 1);
+        $printer->setEmphasis(false);
+        
+        $printer->setEmphasis(true);
+        $printer->setTextSize(2, 1);
+        $printer->text(">>> RAPPORT DE PÉRIODE <<<\n");
+        $printer->setTextSize(1, 1);
+        $printer->setEmphasis(false);
+        $printer->text(str_repeat("=", 48) . "\n\n");
+        
+        // ==================== PÉRIODE ====================
+        $printer->setJustification(Printer::JUSTIFY_LEFT);
+        $printer->setEmphasis(true);
+        $printer->text("PÉRIODE\n");
+        $printer->setEmphasis(false);
+        $printer->text(str_repeat("-", 48) . "\n");
+        
+        $printer->text(sprintf("%-15s : %s\n", "DU", Carbon::parse($request->start_date)->format('d/m/Y')));
+        $printer->text(sprintf("%-15s : %s\n", "AU", Carbon::parse($request->end_date)->format('d/m/Y')));
+        
+        if ($request->has('user_id') && !empty($request->user_id)) {
+            $user = User::find($request->user_id);
+            $printer->text(sprintf("%-15s : %s %s\n", "SERVEUR", $user->prenom ?? '', $user->nom ?? ''));
+        } else {
+            $printer->text(sprintf("%-15s : %s\n", "SERVEUR", "Tous"));
+        }
+        
+        $printer->text(sprintf("%-15s : %d\n", "SHIFTS", $shifts->count()));
+        $printer->text("\n");
+        
+        // ==================== RÉSUMÉ ====================
+        $printer->setEmphasis(true);
+        $printer->text("RÉSUMÉ\n");
+        $printer->setEmphasis(false);
+        $printer->text(str_repeat("-", 48) . "\n");
+        
+        $totalVentes = $orders->sum('totalOrder');
+        $totalCharges = $charges->sum('amount');
+        $net = $totalVentes - $totalCharges;
+        
+        $printer->text(sprintf("%-25s : %s\n", "Nombre de commandes", $orders->count()));
+        $printer->text(sprintf("%-25s : %.2f %s\n", "Total ventes", $totalVentes, $tenant->currency));
+        $printer->text(sprintf("%-25s : %.2f %s\n", "Total charges", $totalCharges, $tenant->currency));
+        $printer->text(str_repeat("-", 48) . "\n");
+        
+        $printer->setEmphasis(true);
+        $printer->setTextSize(2, 1);
+        $printer->text("NET : " . number_format($net, 2) . " " . $tenant->currency . "\n");
+        $printer->setTextSize(1, 1);
+        $printer->setEmphasis(false);
+        $printer->text(str_repeat("-", 48) . "\n\n");
+        
+        // ==================== VENTES PAR PRODUIT ====================
+        if (count($produitsVendus) > 0) {
+            $printer->setEmphasis(true);
+            $printer->setTextSize(2, 1);
+            $printer->text("VENTES PAR PRODUIT\n");
+            $printer->setTextSize(1, 1);
+            $printer->setEmphasis(false);
+            $printer->text(str_repeat("=", 48) . "\n");
+            
+            $printer->setEmphasis(true);
+            $printer->text(sprintf("%-16s %8s %8s %10s\n", "Produit", "Qté", "P.U.", "Total"));
+            $printer->setEmphasis(false);
+            $printer->text(str_repeat("-", 48) . "\n");
+            
+            foreach ($produitsVendus as $produit) {
+                $printer->text(sprintf(
+                    "%-15s %8d %8.2f %10.2f %s\n",
+                    substr($produit['name'], 0, 15),
+                    $produit['quantite'],
+                    $produit['prix_unitaire'],
+                    $produit['total'],
+                    $tenant->currency
+                ));
+                $printer->text(str_repeat("-", 48) . "\n");
+            }
+            
+            $printer->setEmphasis(true);
+            $printer->text(sprintf("%-33s %10.2f %s\n", "TOTAL PRODUITS", $totalVentes, $tenant->currency));
+            $printer->setEmphasis(false);
+            $printer->text("\n");
+        }
+        
+        // ==================== VENTES PAR MÉTHODE ====================
+        $paiements = $orders->groupBy('payment_method')->map(function($group) {
+            return $group->sum('totalOrder');
+        });
+        
+        if ($paiements->isNotEmpty()) {
+            $printer->setEmphasis(true);
+            $printer->text("VENTES PAR MODE DE PAIEMENT\n");
+            $printer->setEmphasis(false);
+            $printer->text(str_repeat("=", 48) . "\n");
+            
+            foreach ($paiements as $methode => $montant) {
+                if ($methode) {
+                    $printer->text(sprintf("Ventes %-20s : %.2f %s\n", ucfirst($methode), $montant, $tenant->currency));
+                }
+            }
+            $printer->text(str_repeat("-", 48) . "\n");
+            $printer->text("\n");
+        }
+        
+        // ==================== LISTE DES SHIFTS ====================
+        $printer->setEmphasis(true);
+        $printer->setTextSize(2, 1);
+        $printer->text("DÉTAIL DES SHIFTS\n");
+        $printer->setTextSize(1, 1);
+        $printer->setEmphasis(false);
+        $printer->text(str_repeat("=", 48) . "\n");
+        
+        foreach ($shifts as $shift) {
+            $user = $shift->user;
+            $shiftOrders = Order::where('shift_id', $shift->id)->sum('totalOrder');
+            $shiftCharges = Charge::where('user_id', $shift->user_id)
+                ->whereBetween('created_at', [$shift->started_at, $shift->ended_at ?? $shift->started_at])
+                ->sum('amount');
+            $shiftNet = $shiftOrders - $shiftCharges;
+            
+            $printer->setEmphasis(true);
+            $printer->text(sprintf("Shift #%d - %s %s\n", $shift->id, $user->prenom ?? '', $user->nom ?? ''));
+            $printer->setEmphasis(false);
+            $printer->text(sprintf("  %-10s : %s\n", "Début", Carbon::parse($shift->started_at)->format('d/m H:i')));
+            if ($shift->ended_at) {
+                $printer->text(sprintf("  %-10s : %s\n", "Fin", Carbon::parse($shift->ended_at)->format('d/m H:i')));
+            }
+            $printer->text(sprintf("  %-10s : %.2f %s\n", "Ventes", $shiftOrders, $tenant->currency));
+            $printer->text(sprintf("  %-10s : %.2f %s\n", "Charges", $shiftCharges, $tenant->currency));
+            $printer->text(sprintf("  %-10s : %.2f %s\n", "Net", $shiftNet, $tenant->currency));
+            $printer->text(str_repeat("-", 48) . "\n");
+        }
+        
+        // ==================== BILAN FINAL ====================
+        $printer->setJustification(Printer::JUSTIFY_CENTER);
+        $printer->setEmphasis(true);
+        $printer->setTextSize(3, 3);
+        
+        if ($net >= 0) {
+            $printer->text(sprintf("%.2f %s\n", $net, $tenant->currency));
+        } else {
+            $printer->text(sprintf("PERTE: %.2f %s\n", abs($net), $tenant->currency));
+        }
+        
+        $printer->setTextSize(1, 1);
+        $printer->setEmphasis(false);
+        $printer->setJustification(Printer::JUSTIFY_LEFT);
+        $printer->text(str_repeat("=", 48) . "\n");
+        
+        $printer->text("Rapport du " . Carbon::now()->format('d/m/Y H:i:s') . "\n");
+        $printer->text("\n");
+        
+        $printer->cut();
+        $printer->close();
+        
+        return response()->json([
+            'message' => 'Rapport de période imprimé avec succès',
+            'period' => [
+                'start_date' => $request->start_date,
+                'end_date' => $request->end_date
+            ],
+            'summary' => [
+                'shifts_count' => $shifts->count(),
+                'orders_count' => $orders->count(),
+                'total_ventes' => $totalVentes,
+                'total_charges' => $totalCharges,
+                'net' => $net
+            ]
+        ]);
+        
+    } catch (\Exception $e) {
+        \Log::error('Erreur impression rapport période: ' . $e->getMessage());
+        return response()->json([
+            'message' => 'Erreur lors de l\'impression',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+// ========================
+// Récupérer la liste des utilisateurs pour le filtre
+// ========================
+public function getShiftUsers()
+{
+    $tenantId = Auth::user()->tenant_id;
+    
+    $users = User::where('tenant_id', $tenantId)
+        ->whereHas('shifts')
+        ->select('id', 'nom', 'prenom')
+        ->get();
+    
+    return response()->json(['data' => $users]);
+}
     // ========================
     // Supprimer un shift
     // ========================

@@ -66,7 +66,6 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/shifts/end', [ShiftController::class, 'end']);   // Terminer un shift
             Route::get('/shifts/currentStats', [ShiftController::class, 'currentStats']); // Obtenir le shift actif
             Route::post('/shifts/{shift}/printCurrentShift', [ShiftController::class, 'printCurrentShift']);
-            Route::post('/shifts/{shift}/print', [ShiftController::class, 'printShift']);         
             Route::get('/shifts/hasActiveShift', [ShiftController::class, 'hasActiveShift']); // Vérifier s'il y a un shift actif
             Route::post('/shifts/{shift}/openDrawer', [ShiftController::class, 'openDrawer']); // Ouvrir le tiroir-caisse
 
@@ -114,7 +113,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // Shifts 
             Route::get('/shifts', [ShiftController::class, 'index']);           // Lister tous les shifts
             Route::get('/shifts/{shift}', [ShiftController::class, 'show']);        // Afficher un shift spécifique
-            Route::Delete('/shifts/{shift}', [ShiftController::class, 'destroy']);    // Supprimer un shift     
+            Route::Delete('/shifts/{shift}', [ShiftController::class, 'destroy']);    // Supprimer un shift 
+            Route::post('/shifts/{shift}/print', [ShiftController::class, 'printShift']);
+            Route::get('/shifts/filtered', [ShiftController::class, 'getFilteredShifts']); // Obtenir les shifts filtrés par date
+            Route::post('/shifts/print-period', [ShiftController::class, 'printPeriodReport']); // Imprimer le rapport de période
+            Route::get('/shifts/users', [ShiftController::class, 'getShiftUsers']); // Obtenir la liste des utilisateurs ayant fait des shifts
+
     // -----------------
     // Catégories
             Route::post('/categories', [CategoryController::class, 'store']);     // Créer une nouvelle catégorie
