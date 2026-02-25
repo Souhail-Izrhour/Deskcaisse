@@ -76,8 +76,10 @@ export default function Panier({
             <FaUser className="w-4 h-4 text-blue-100 mr-1" />
             {currentUser ? (
               <span className="font-medium text-gray-800 text-sm">
-                {currentUser.prenom} {currentUser.nom}
-              </span>
+            {`${currentUser.prenom} ${currentUser.nom}`.length > 20
+              ? `${currentUser.prenom} ${currentUser.nom}`.slice(0, 18) + ".."
+              : `${currentUser.prenom} ${currentUser.nom}`}
+          </span>
             ) : (
               <FaSpinner className="animate-spin h-3 w-3 text-blue-600" />
             )}
