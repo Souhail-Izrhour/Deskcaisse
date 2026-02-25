@@ -1,6 +1,7 @@
-import React from "react";
-import { FaPlus, FaMinus, FaTrash, FaShoppingCart, FaExclamationTriangle } from "react-icons/fa";
+import React, { useEffect, useState } from "react";
+import { FaPlus, FaMinus, FaTrash, FaShoppingCart, FaExclamationTriangle, FaUser, FaSpinner, FaCalendarAlt, FaClock } from "react-icons/fa";
 import { BsReceipt } from "react-icons/bs";
+import AxiosClient from "../Services/AxiosClient";
 
 export default function Panier({ 
   panier, 
@@ -10,17 +11,100 @@ export default function Panier({
   onValiderCommande,
   validating,
   shiftActive,
+  showNotification,
   // startShift
 }) {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [currentDateTime, setCurrentDateTime] = useState(new Date());
+
+  // Mise à jour de l'horloge chaque seconde
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDateTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Récupérer les informations de l'utilisateur connecté
+  useEffect(() => {
+    fetchCurrentUser();
+  }, []);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await AxiosClient.get("/me");
+      setCurrentUser(response.data.user);
+    } catch (error) {
+      console.error("Erreur récupération utilisateur:", error);
+      if (showNotification) {
+        showNotification("error", "Erreur lors de la récupération des informations utilisateur", error);
+      }
+    }
+  };
+
+  // Formatage de la date en français
+  const formatDate = (date) => {
+    return date.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  // Formatage de l'heure
+  const formatTime = (date) => {
+    return date.toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };  
+
   const total = panier.reduce((sum, p) => sum + parseFloat(p.price) * p.quantite, 0);
 
-  // Hauteur pour 3 items (chaque item ~80px + margin)
+  // Hauteur pour 5 items (chaque item ~75px + margin)
   const maxHeight = 5 * 75; // px
 
   return (
     <div className="bg-white rounded-2xl shadow border flex flex-col" style={{ minHeight: "180px" }}>
-      {/* En-tête du panier - inchangé */}
-      <div className="p-4 border-b bg-blue-50 rounded-t-2xl">
+      {/* Header mince avec informations employé et date/heure - Collé en haut */}
+      <div className="border-b border-gray-200">
+        <div className="flex justify-between items-center py-2 px-4">
+          {/* Informations employé */}
+          <div className="flex items-center space-x-2">
+            <div className="bg-blue-100 p-1.5 rounded-full">
+              <FaUser className="text-blue-600 text-sm" />
+            </div>
+            {currentUser ? (
+              <span className="font-medium text-gray-800 text-sm">
+                {currentUser.prenom} {currentUser.nom}
+              </span>
+            ) : (
+              <FaSpinner className="animate-spin h-3 w-3 text-blue-600" />
+            )}
+          </div>
+
+          {/* Date et heure */}
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-1">
+              <FaCalendarAlt className="text-gray-400 text-sm" />
+              <span className="text-sm text-gray-600 capitalize">
+                {formatDate(currentDateTime)}
+              </span>
+            </div>
+            <div className="flex items-center space-x-1 border-l border-gray-200 pl-3">
+              <FaClock className="text-gray-400 text-sm" />
+              <span className="text-sm font-medium text-gray-700">
+                {formatTime(currentDateTime)}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* En-tête du panier */}
+      <div className="p-4 border-b bg-blue-50">
         <div className="flex items-center">
           <FaShoppingCart className="w-5 h-5 text-blue-600 mr-2" />
           <h3 className="font-bold text-gray-800">Panier</h3>
@@ -125,7 +209,7 @@ export default function Panier({
 
       {/* Total et validation */}
       {panier.length > 0 && (
-        <div className="p-4 border-t bg-white rounded-2xl">
+        <div className="p-4 border-t bg-white rounded-b-2xl">
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Total</span>
