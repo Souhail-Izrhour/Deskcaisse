@@ -1,4 +1,9 @@
-@echo off
+@//# localhost name resolution is handled within DNS itself.
+#	127.0.0.1       localhost
+#	::1             localhost
+127.0.0.1 hlasstech
+
+echo off
 title DeskCaisse - Lancement
 
 :: ==============================
@@ -22,6 +27,7 @@ timeout /t 10 /nobreak > nul
 :: ==============================
 :: Ouverture de la PWA Chrome maximisée
 :: ==============================
-start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" --app=http://localhost:3000 --start-maximized
-
+:: start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" --app=http://hlasstech:3000 --start-maximized
+start "" "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --app=http://hlasstech:3000 --start-maximized
 exit
+ 
