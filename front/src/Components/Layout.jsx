@@ -488,7 +488,7 @@ function Layout() {
             )}
           </>
         )}
-        {!shiftLoading && !shiftActive && (
+        
           <button
             onClick={() => setShowLogoutModal(true)}
             className={`w-full ${isCollapsed ? 'p-3 justify-center' : 'py-2 px-2 justify-center gap-3'} flex items-center bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all duration-200 font-medium group`}
@@ -499,7 +499,7 @@ function Layout() {
               <span className="group-hover:text-red-600 transition-colors">Déconnexion</span>
             )}
           </button>
-        )}
+        
       </div>
     </aside>
   );
