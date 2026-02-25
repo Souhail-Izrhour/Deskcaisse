@@ -1,0 +1,27 @@
+@echo off
+title DeskCaisse - Lancement
+
+:: ==============================
+:: Lancement du BACKEND en arrière-plan
+:: ==============================
+cd /d C:\Users\HP\Desktop\Main\MyProjects\Deskcaisse\back
+start "" /B php -S 127.0.0.1:8000 -t public > "%TEMP%\backend_log.txt" 2>&1
+
+:: ==============================
+:: Lancement du FRONTEND en arrière-plan
+:: ==============================
+cd /d C:\Users\HP\Desktop\Main\MyProjects\Deskcaisse\front
+set BROWSER=none
+start "" /B npm start > "%TEMP%\frontend_log.txt" 2>&1
+
+:: ==============================
+:: Attente 10 secondes pour que les serveurs démarrent
+:: ==============================
+timeout /t 10 /nobreak > nul
+
+:: ==============================
+:: Ouverture de la PWA Chrome maximisée
+:: ==============================
+start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" --app=http://localhost:3000 --start-maximized
+
+exit
