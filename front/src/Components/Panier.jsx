@@ -70,12 +70,10 @@ export default function Panier({
     <div className="bg-white rounded-2xl shadow border flex flex-col" style={{ minHeight: "180px" }}>
       {/* Header mince avec informations employé et date/heure - Collé en haut */}
       <div className="border-b border-gray-200">
-        <div className="flex justify-between items-center py-2 px-4">
+        <div className="flex justify-between items-center py-1 px-1">
           {/* Informations employé */}
-          <div className="flex items-center space-x-2">
-            <div className="bg-blue-100 p-1.5 rounded-full">
-              <FaUser className="text-blue-600 text-sm" />
-            </div>
+          <div className="flex items-center space-x-1">
+            <FaUser className="w-4 h-4 text-blue-100 mr-1" />
             {currentUser ? (
               <span className="font-medium text-gray-800 text-sm">
                 {currentUser.prenom} {currentUser.nom}
@@ -86,20 +84,16 @@ export default function Panier({
           </div>
 
           {/* Date et heure */}
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center space-x-1">
-              <FaCalendarAlt className="text-gray-400 text-sm" />
-              <span className="text-sm text-gray-600 capitalize">
-                {formatDate(currentDateTime)}
-              </span>
-            </div>
-            <div className="flex items-center space-x-1 border-l border-gray-200 pl-3">
-              <FaClock className="text-gray-400 text-sm" />
-              <span className="text-sm font-medium text-gray-700">
-                {formatTime(currentDateTime)}
-              </span>
-            </div>
-          </div>
+          <div className="flex items-center text-sm text-gray-600">
+          <span className="mx-1 text-gray-300">|</span>
+          <span className="capitalize">
+            {formatDate(currentDateTime)}
+          </span>
+          <span className="mx-1 text-gray-300">|</span>
+          <span className="font-medium text-gray-700">
+            {formatTime(currentDateTime)}
+          </span>
+        </div>
         </div>
       </div>
 
