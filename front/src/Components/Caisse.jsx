@@ -6,6 +6,7 @@ import SubscriptionModal from "../Modals/SubscriptionModal";
 import NotificationModal from "../Modals/NotificationModal";
 import { FaShoppingCart, FaPlus, FaSpinner, FaArrowLeft , FaProductHunt, FaImage } from "react-icons/fa";
 import { useOutletContext } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 export default function Caisse() {
   const [categories, setCategories] = useState([]);
@@ -14,6 +15,7 @@ export default function Caisse() {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [validating, setValidating] = useState(false);
   const { shiftActive, startShift } = useOutletContext();
+  const navigate = useNavigate();
 
 
   // État pour la notification (seulement pour erreurs importantes)
@@ -52,18 +54,29 @@ export default function Caisse() {
     fetchCategories();
   }, []);
 
-  const fetchCategories = async () => {
-    setLoading(true);
-    try {
-      const response = await AxiosClient.get("/categories");
-      setCategories(response.data.data);
-    } catch (error) {
-      console.error("Erreur fetch catégories:", error);
-      showNotification("error", "Erreur lors du chargement", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+      const fetchCategories = async () => {
+      setLoading(true);
+
+      try {
+        const response = await AxiosClient.get("/categories");
+        setCategories(response.data.data);
+
+      } catch (error) {
+
+        // Vérifier si l'erreur vient du serveur
+        if (error.response && error.response.status === 401) {
+          localStorage.removeItem("auth_token"); // supprimer token
+          navigate("/login"); // redirection vers login
+          return;
+        }
+
+        console.error("Erreur fetch catégories:", error);
+        showNotification("error", "Erreur lors du chargement", error);
+
+      } finally {
+        setLoading(false);
+      }
+    };
 
   const handleCategoryClick = (category) => {
     setSelectedCategory(category);
