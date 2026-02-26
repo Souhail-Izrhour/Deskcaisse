@@ -12,9 +12,10 @@ import {
   FiTrendingDown,
   FiArrowUp,
   FiArrowDown,
-  FiRefreshCw
+  FiCheckSquare,
+  FiSquare
 } from "react-icons/fi";
-import { FaSpinner, FaPrint } from "react-icons/fa";
+import { FaSpinner } from "react-icons/fa";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { fr } from "date-fns/locale";
@@ -39,6 +40,10 @@ function Raports() {
   // États pour les dates (pour DatePicker)
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
+  
+  // État pour la sélection des shifts
+  const [selectedShifts, setSelectedShifts] = useState([]);
+  const [selectAll, setSelectAll] = useState(false);
   
   // État pour la notification
   const [notification, setNotification] = useState({
@@ -76,6 +81,43 @@ function Raports() {
     setNotification(prev => ({ ...prev, show: false }));
   }, []);
 
+  // ========== GESTION DE LA SÉLECTION ==========
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedShifts([]);
+      setSelectAll(false);
+    } else {
+      setSelectedShifts(filteredShifts.map(shift => shift.id));
+      setSelectAll(true);
+    }
+  };
+
+  const handleSelectShift = (shiftId) => {
+    setSelectedShifts(prev => {
+      const newSelected = prev.includes(shiftId)
+        ? prev.filter(id => id !== shiftId)
+        : [...prev, shiftId];
+      
+      // Mettre à jour l'état "selectAll"
+      setSelectAll(newSelected.length === filteredShifts.length && filteredShifts.length > 0);
+      
+      return newSelected;
+    });
+  };
+
+  // ========== SÉLECTION AUTOMATIQUE QUAND LES FILTRES CHANGENT ==========
+  useEffect(() => {
+    // Si des filtres de date sont actifs, sélectionner automatiquement tous les shifts filtrés
+    if (filters.start_date && filters.end_date) {
+      setSelectedShifts(filteredShifts.map(shift => shift.id));
+      setSelectAll(true);
+    } else {
+      // Sinon, vider la sélection
+      setSelectedShifts([]);
+      setSelectAll(false);
+    }
+  }, [filters.start_date, filters.end_date, filteredShifts]);
+
   // ========== CHARGEMENT DE TOUS LES SHIFTS ==========
   const fetchAllShifts = useCallback(async () => {
     setLoading(true);
@@ -91,7 +133,7 @@ function Raports() {
       });
       
       setShifts(sortedShifts);
-      setFilteredShifts(sortedShifts); // Initialiser les filtres avec tous les shifts
+      setFilteredShifts(sortedShifts);
     } catch (error) {
       console.error("Erreur chargement shifts:", error);
       showNotification("error", "Erreur lors du chargement des rapports", error);
@@ -218,22 +260,38 @@ function Raports() {
     });
     setStartDate(null);
     setEndDate(null);
-    setFilteredShifts(shifts); // Revenir à tous les shifts
+    setFilteredShifts(shifts);
   };
 
-  // ========== IMPRESSION ==========
+  // ========== IMPRESSION DE LA PÉRIODE SÉLECTIONNÉE ==========
   const printPeriodReport = async () => {
     if (!filters.start_date || !filters.end_date) {
       showNotification("warning", "Veuillez sélectionner une période");
       return;
     }
 
+    if (selectedShifts.length === 0) {
+      showNotification("warning", "Aucun shift à imprimer pour cette période");
+      return;
+    }
+
     setPrinting(true);
     try {
-      await AxiosClient.post("/shifts/print-period", filters);
-      showNotification("success", "Rapport de période imprimé avec succès");
+      // Envoyer les IDs des shifts sélectionnés au backend
+      const response = await AxiosClient.post("/shifts/print-period", {
+        start_date: filters.start_date,
+        end_date: filters.end_date,
+        user_id: filters.user_id,
+        shift_ids: selectedShifts // Ajout des IDs des shifts sélectionnés
+      });
+      
+      showNotification(
+        "success", 
+        `${selectedShifts.length} shift(s) imprimé(s) avec succès pour la période du ${new Date(filters.start_date).toLocaleDateString('fr-FR')} au ${new Date(filters.end_date).toLocaleDateString('fr-FR')}`
+      );
+      
     } catch (error) {
-      console.error("Erreur impression rapport:", error);
+      console.error("Erreur impression rapport période:", error);
       const errorMsg = error.response?.data?.message || "Erreur lors de l'impression";
       showNotification("error", errorMsg, error);
     } finally {
@@ -302,26 +360,6 @@ function Raports() {
           duration={notification.duration}
           onClose={closeNotification}
         />
-
-        {/* Header */}
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-6 mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Rapports</h1>
-              <p className="text-gray-600">
-                {filteredShifts.length} shift{filteredShifts.length > 1 ? 's' : ''} affiché{filteredShifts.length > 1 ? 's' : ''}
-                {filteredShifts.length !== shifts.length && ` (${shifts.length} au total)`}
-              </p>
-            </div>
-            <button
-              onClick={fetchAllShifts}
-              className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition duration-150"
-              title="Rafraîchir"
-            >
-              <FiRefreshCw className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
 
         {/* Filtres */}
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-6 mb-4">
@@ -419,10 +457,14 @@ function Raports() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div className="mb-4 sm:mb-0">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">Résumé</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
                   <div>
                     <p className="text-sm text-gray-600">Shifts</p>
                     <p className="text-2xl font-bold text-gray-900">{filteredShifts.length}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Sélectionnés</p>
+                    <p className="text-2xl font-bold text-blue-600">{selectedShifts.length}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Total ventes</p>
@@ -439,24 +481,35 @@ function Raports() {
                     </p>
                   </div>
                 </div>
+                {filters.start_date && filters.end_date && (
+                  <p className="text-sm text-blue-600 mt-2">
+                    Période sélectionnée : du {new Date(filters.start_date).toLocaleDateString('fr-FR')} au {new Date(filters.end_date).toLocaleDateString('fr-FR')}
+                  </p>
+                )}
               </div>
               
               <button
                 onClick={printPeriodReport}
-                disabled={printing || !filters.start_date || !filters.end_date}
+                disabled={printing || !filters.start_date || !filters.end_date || selectedShifts.length === 0}
                 className={`px-6 py-3 rounded-lg text-white font-medium flex items-center justify-center ${
-                  printing || !filters.start_date || !filters.end_date
+                  printing || !filters.start_date || !filters.end_date || selectedShifts.length === 0
                     ? 'bg-gray-400 cursor-not-allowed' 
                     : 'bg-blue-600 hover:bg-blue-700'
                 }`}
-                title={!filters.start_date || !filters.end_date ? "Sélectionnez une période" : ""}
+                title={
+                  !filters.start_date || !filters.end_date 
+                    ? "Sélectionnez une période" 
+                    : selectedShifts.length === 0 
+                      ? "Aucun shift dans cette période" 
+                      : ""
+                }
               >
                 {printing ? (
                   <FaSpinner className="animate-spin w-5 h-5 mr-2" />
                 ) : (
                   <FiPrinter className="w-5 h-5 mr-2" />
                 )}
-                {printing ? 'Impression...' : 'Imprimer la période'}
+                {printing ? 'Impression...' : `Imprimer ${selectedShifts.length} shift(s) de la période`}
               </button>
             </div>
           </div>
@@ -468,6 +521,21 @@ function Raports() {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
+                  {/* Colonne pour la sélection */}
+                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <button
+                      onClick={handleSelectAll}
+                      className="flex items-center hover:text-gray-700"
+                      disabled={!filters.start_date || !filters.end_date}
+                    >
+                      {selectAll ? (
+                        <FiCheckSquare className="w-5 h-5 text-blue-600" />
+                      ) : (
+                        <FiSquare className="w-5 h-5" />
+                      )}
+                      <span className="ml-2">Tous</span>
+                    </button>
+                  </th>
                   <th 
                     className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('started_at')}
@@ -512,7 +580,7 @@ function Raports() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {loading ? (
                   <tr>
-                    <td colSpan="7" className="px-6 py-12 text-center">
+                    <td colSpan="8" className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center justify-center">
                         <FaSpinner className="animate-spin h-10 w-10 text-blue-600 mb-4" />
                         <p className="text-gray-600">Chargement des rapports...</p>
@@ -521,7 +589,7 @@ function Raports() {
                   </tr>
                 ) : filteredShifts.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="px-6 py-12 text-center">
+                    <td colSpan="8" className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center justify-center">
                         <div className="w-16 h-16 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl flex items-center justify-center mb-4">
                           <FiCalendar className="w-8 h-8 text-purple-400" />
@@ -534,9 +602,23 @@ function Raports() {
                 ) : (
                   filteredShifts.map((shift) => {
                     const net = calculateNet(shift.ventes, shift.charges);
+                    const isSelected = selectedShifts.includes(shift.id);
                     
                     return (
-                      <tr key={shift.id} className="hover:bg-gray-50">
+                      <tr 
+                        key={shift.id} 
+                        className={`hover:bg-gray-50 cursor-pointer ${isSelected ? 'bg-blue-50' : ''}`}
+                        onClick={() => filters.start_date && filters.end_date && handleSelectShift(shift.id)}
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <button className="flex items-center">
+                            {isSelected ? (
+                              <FiCheckSquare className="w-5 h-5 text-blue-600" />
+                            ) : (
+                              <FiSquare className="w-5 h-5 text-gray-400" />
+                            )}
+                          </button>
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {formatDateTime(shift.started_at)}
                         </td>
@@ -592,7 +674,7 @@ function Raports() {
               {filteredShifts.length > 0 && (
                 <tfoot className="bg-gray-50">
                   <tr>
-                    <td colSpan="4" className="px-6 py-4 text-sm font-semibold text-gray-900">
+                    <td colSpan="5" className="px-6 py-4 text-sm font-semibold text-gray-900">
                       Totaux ({filteredShifts.length} shift{filteredShifts.length > 1 ? 's' : ''})
                     </td>
                     <td className="px-6 py-4 text-sm font-semibold text-green-600">
