@@ -806,16 +806,27 @@ public function printPeriodReport(Request $request)
         ->whereIn('shift_id', $shiftIds)
         ->get();
     
-    $charges = collect(); // Initialiser une collection vide pour les charges
+    // Récupérer TOUTES les charges détaillées pour chaque shift
+    $allCharges = collect(); // Collection pour toutes les charges
     
-    // Récupérer les charges pour chaque shift
     foreach ($shifts as $shift) {
         $shiftCharges = Charge::where('user_id', $shift->user_id)
             ->where('tenant_id', $tenantId)
             ->whereBetween('created_at', [$shift->started_at, $shift->ended_at ?? $shift->started_at])
-            ->get();
-        $charges = $charges->concat($shiftCharges);
+            ->get()
+            ->map(function($charge) use ($shift) {
+                // Ajouter les informations du shift à chaque charge
+                $charge->shift_id = $shift->id;
+                $charge->shift_start = $shift->started_at;
+                $charge->user_name = $shift->user->prenom . $shift->user->nom;
+                return $charge;
+            });
+        
+        $allCharges = $allCharges->concat($shiftCharges);
     }
+    
+    // Trier les charges par date (plus récentes d'abord)
+    $allCharges = $allCharges->sortByDesc('created_at');
     
     $tenant = Tenant::find($tenantId);
     
@@ -858,7 +869,7 @@ public function printPeriodReport(Request $request)
         
         $printer->setEmphasis(true);
         $printer->setTextSize(2, 1);
-        $printer->text(">>> RAPPORT DE PÉRIODE <<<\n");
+        $printer->text(">> RAPPORT DE PÉRIODE <<\n");
         $printer->setTextSize(1, 1);
         $printer->setEmphasis(false);
         $printer->text(str_repeat("=", 48) . "\n\n");
@@ -890,7 +901,7 @@ public function printPeriodReport(Request $request)
         $printer->text(str_repeat("-", 48) . "\n");
         
         $totalVentes = $orders->sum('totalOrder');
-        $totalCharges = $charges->sum('amount');
+        $totalCharges = $allCharges->sum('amount');
         $net = $totalVentes - $totalCharges;
         
         $printer->text(sprintf("%-25s : %s\n", "Nombre de commandes", $orders->count()));
@@ -957,33 +968,40 @@ public function printPeriodReport(Request $request)
             $printer->text("\n");
         }
         
-        // ==================== LISTE DES SHIFTS SÉLECTIONNÉS ====================
-        $printer->setEmphasis(true);
-        $printer->setTextSize(2, 1);
-        $printer->text("DÉTAIL DES SHIFTS SÉLECTIONNÉS\n");
-        $printer->setTextSize(1, 1);
-        $printer->setEmphasis(false);
-        $printer->text(str_repeat("=", 48) . "\n");
-        
-        foreach ($shifts as $shift) {
-            $user = $shift->user;
-            $shiftOrders = Order::where('shift_id', $shift->id)->sum('totalOrder');
-            $shiftCharges = Charge::where('user_id', $shift->user_id)
-                ->whereBetween('created_at', [$shift->started_at, $shift->ended_at ?? $shift->started_at])
-                ->sum('amount');
-            $shiftNet = $shiftOrders - $shiftCharges;
-            
+        // ==================== DÉTAIL COMPLET DES CHARGES ====================
+        if ($allCharges->count() > 0) {
             $printer->setEmphasis(true);
-            $printer->text(sprintf("Shift #%d - %s %s\n", $shift->id, $user->prenom ?? '', $user->nom ?? ''));
+            $printer->setTextSize(2, 1);
+            $printer->text("DÉTAIL DES CHARGES\n");
+            $printer->setTextSize(1, 1);
             $printer->setEmphasis(false);
-            $printer->text(sprintf("  %-10s : %s\n", "Début", Carbon::parse($shift->started_at)->format('d/m H:i')));
-            if ($shift->ended_at) {
-                $printer->text(sprintf("  %-10s : %s\n", "Fin", Carbon::parse($shift->ended_at)->format('d/m H:i')));
-            }
-            $printer->text(sprintf("  %-10s : %.2f %s\n", "Ventes", $shiftOrders, $tenant->currency));
-            $printer->text(sprintf("  %-10s : %.2f %s\n", "Charges", $shiftCharges, $tenant->currency));
-            $printer->text(sprintf("  %-10s : %.2f %s\n", "Net", $shiftNet, $tenant->currency));
+            $printer->text(str_repeat("=", 48) . "\n");
+            
+            // En-tête du tableau des charges
+            $printer->setEmphasis(true);
+            $printer->text(sprintf("%-11s %-19s %10s \n", "Date/Heure",  "Description", "Montant"));
+            $printer->setEmphasis(false);
             $printer->text(str_repeat("-", 48) . "\n");
+
+    foreach ($allCharges as $charge) {
+        $printer->text(sprintf(
+            "%-5s %-22s %4.2f   %s\n",
+            Carbon::parse($charge->created_at)->format('d/m H:i'),
+            substr($charge->description ?? 'Charge', 0, 19),
+            $charge->amount,
+            $tenant->currency
+        ));
+        $printer->text("Opérateur : " . ($charge->user_name ?? 'N/A') . "\n");
+        $printer->text(str_repeat("-", 48) . "\n");
+    }
+            
+            // Total des charges
+            $printer->setEmphasis(true);
+            $printer->text(sprintf("%-35s %8.2f %s\n", "TOTAL CHARGES", $totalCharges, $tenant->currency));
+            $printer->setEmphasis(false);
+            $printer->text(str_repeat("=", 48) . "\n");
+            $printer->text("\n");
+            
         }
         
         // ==================== BILAN FINAL ====================
@@ -1018,6 +1036,7 @@ public function printPeriodReport(Request $request)
                 'shifts_count' => $shifts->count(),
                 'selected_shifts' => $shifts->pluck('id'),
                 'orders_count' => $orders->count(),
+                'charges_count' => $allCharges->count(),
                 'total_ventes' => $totalVentes,
                 'total_charges' => $totalCharges,
                 'net' => $net

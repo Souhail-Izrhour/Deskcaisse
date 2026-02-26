@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import AxiosClient from "../Services/AxiosClient";
 import { useErrorHandler } from "../hooks/useErrorHandler";
 import SubscriptionModal from "../Modals/SubscriptionModal";
@@ -117,6 +117,25 @@ function Raports() {
       setSelectAll(false);
     }
   }, [filters.start_date, filters.end_date, filteredShifts]);
+
+  // ========== CALCUL DES TOTAUX BASÉ SUR LES SHIFTS SÉLECTIONNÉS ==========
+  const selectedTotals = useMemo(() => {
+    // Filtrer les shifts pour ne garder que ceux qui sont sélectionnés
+    const selectedShiftsData = filteredShifts.filter(shift => 
+      selectedShifts.includes(shift.id)
+    );
+    
+    const totalVentes = selectedShiftsData.reduce((sum, s) => sum + parseFloat(s.ventes || 0), 0);
+    const totalCharges = selectedShiftsData.reduce((sum, s) => sum + parseFloat(s.charges || 0), 0);
+    const totalNet = totalVentes - totalCharges;
+    
+    return { 
+      totalVentes, 
+      totalCharges, 
+      totalNet,
+      count: selectedShiftsData.length 
+    };
+  }, [filteredShifts, selectedShifts]);
 
   // ========== CHARGEMENT DE TOUS LES SHIFTS ==========
   const fetchAllShifts = useCallback(async () => {
@@ -331,16 +350,6 @@ function Raports() {
     return parseFloat(ventes || 0) - parseFloat(charges || 0);
   };
 
-  const getTotals = () => {
-    const totalVentes = filteredShifts.reduce((sum, s) => sum + parseFloat(s.ventes || 0), 0);
-    const totalCharges = filteredShifts.reduce((sum, s) => sum + parseFloat(s.charges || 0), 0);
-    const totalNet = totalVentes - totalCharges;
-    
-    return { totalVentes, totalCharges, totalNet };
-  };
-
-  const totals = getTotals();
-
   return (
     <div className="min-h-screen bg-blue-100 pt-2 px-1 sm:px-4 md:px-4 pb-3 sm:pb-4 md:pb-6">
       <div className="max-w-7xl mx-auto">
@@ -451,39 +460,44 @@ function Raports() {
           </div>
         </div>
 
-        {/* Résumé et bouton impression */}
+        {/* Résumé et bouton impression - BASÉ SUR LES SHIFTS SÉLECTIONNÉS */}
         {filteredShifts.length > 0 && (
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-6 mb-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div className="mb-4 sm:mb-0">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Résumé</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+               
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   <div>
-                    <p className="text-sm text-gray-600">Shifts</p>
-                    <p className="text-2xl font-bold text-gray-900">{filteredShifts.length}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Sélectionnés</p>
+                    <p className="text-sm text-gray-600">Shifts sélectionnés</p>
                     <p className="text-2xl font-bold text-blue-600">{selectedShifts.length}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Total ventes</p>
-                    <p className="text-2xl font-bold text-green-600">{formatCurrency(totals.totalVentes)}</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {formatCurrency(selectedTotals.totalVentes)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Total charges</p>
-                    <p className="text-2xl font-bold text-red-600">{formatCurrency(totals.totalCharges)}</p>
+                    <p className="text-2xl font-bold text-red-600">
+                      {formatCurrency(selectedTotals.totalCharges)}
+                    </p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Net</p>
-                    <p className={`text-2xl font-bold ${totals.totalNet >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatCurrency(totals.totalNet)}
+                    <p className={`text-2xl font-bold ${selectedTotals.totalNet >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatCurrency(selectedTotals.totalNet)}
                     </p>
                   </div>
                 </div>
                 {filters.start_date && filters.end_date && (
                   <p className="text-sm text-blue-600 mt-2">
                     Période sélectionnée : du {new Date(filters.start_date).toLocaleDateString('fr-FR')} au {new Date(filters.end_date).toLocaleDateString('fr-FR')}
+                  </p>
+                )}
+                {selectedShifts.length === 0 && filters.start_date && filters.end_date && (
+                  <p className="text-sm text-orange-600 mt-2">
+                    ⚠️ Aucun shift sélectionné. Utilisez les cases à cocher pour sélectionner des shifts.
                   </p>
                 )}
               </div>
@@ -500,7 +514,7 @@ function Raports() {
                   !filters.start_date || !filters.end_date 
                     ? "Sélectionnez une période" 
                     : selectedShifts.length === 0 
-                      ? "Aucun shift dans cette période" 
+                      ? "Sélectionnez au moins un shift" 
                       : ""
                 }
               >
@@ -509,7 +523,7 @@ function Raports() {
                 ) : (
                   <FiPrinter className="w-5 h-5 mr-2" />
                 )}
-                {printing ? 'Impression...' : `Imprimer ${selectedShifts.length} shift(s) de la période`}
+                {printing ? 'Impression...' : `Imprimer ${selectedShifts.length} shift(s) sélectionné(s)`}
               </button>
             </div>
           </div>
@@ -670,22 +684,22 @@ function Raports() {
                 )}
               </tbody>
               
-              {/* Pied de tableau avec totaux */}
-              {filteredShifts.length > 0 && (
-                <tfoot className="bg-gray-50">
+              {/* Pied de tableau avec totaux des shifts sélectionnés */}
+              {selectedShifts.length > 0 && (
+                <tfoot className="bg-blue-50">
                   <tr>
                     <td colSpan="5" className="px-6 py-4 text-sm font-semibold text-gray-900">
-                      Totaux ({filteredShifts.length} shift{filteredShifts.length > 1 ? 's' : ''})
+                      Totaux des {selectedShifts.length} shift(s) sélectionné(s)
                     </td>
                     <td className="px-6 py-4 text-sm font-semibold text-green-600">
-                      {formatCurrency(totals.totalVentes)}
+                      {formatCurrency(selectedTotals.totalVentes)}
                     </td>
                     <td className="px-6 py-4 text-sm font-semibold text-red-600">
-                      {formatCurrency(totals.totalCharges)}
+                      {formatCurrency(selectedTotals.totalCharges)}
                     </td>
                     <td className="px-6 py-4 text-sm font-semibold">
-                      <span className={totals.totalNet >= 0 ? 'text-green-600' : 'text-red-600'}>
-                        {formatCurrency(totals.totalNet)}
+                      <span className={selectedTotals.totalNet >= 0 ? 'text-green-600' : 'text-red-600'}>
+                        {formatCurrency(selectedTotals.totalNet)}
                       </span>
                     </td>
                   </tr>
