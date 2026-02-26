@@ -1003,6 +1003,34 @@ public function printPeriodReport(Request $request)
             $printer->text("\n");
             
         }
+        //  // ==================== LISTE DES SHIFTS SÉLECTIONNÉS ====================
+        // $printer->setEmphasis(true);
+        // $printer->setTextSize(2, 1);
+        // $printer->text("LES SHIFTS SÉLECTIONNÉS\n");
+        // $printer->setTextSize(1, 1);
+        // $printer->setEmphasis(false);
+        // $printer->text(str_repeat("=", 48) . "\n");
+        
+        // foreach ($shifts as $shift) {
+        //     $user = $shift->user;
+        //     $shiftOrders = Order::where('shift_id', $shift->id)->sum('totalOrder');
+        //     $shiftCharges = Charge::where('user_id', $shift->user_id)
+        //         ->whereBetween('created_at', [$shift->started_at, $shift->ended_at ?? $shift->started_at])
+        //         ->sum('amount');
+        //     $shiftNet = $shiftOrders - $shiftCharges;
+            
+        //     $printer->setEmphasis(true);
+        //     $printer->text(sprintf("Shift #%d - %s %s\n", $shift->id, $user->prenom ?? '', $user->nom ?? ''));
+        //     $printer->setEmphasis(false);
+        //     $printer->text(sprintf("  %-10s : %s\n", "Début", Carbon::parse($shift->started_at)->format('d/m H:i')));
+        //     if ($shift->ended_at) {
+        //         $printer->text(sprintf("  %-10s : %s\n", "Fin", Carbon::parse($shift->ended_at)->format('d/m H:i')));
+        //     }
+        //     $printer->text(sprintf("  %-10s : %.2f %s\n", "Ventes", $shiftOrders, $tenant->currency));
+        //     $printer->text(sprintf("  %-10s : %.2f %s\n", "Charges", $shiftCharges, $tenant->currency));
+        //     $printer->text(sprintf("  %-10s : %.2f %s\n", "Net", $shiftNet, $tenant->currency));
+        //     $printer->text(str_repeat("-", 48) . "\n");
+        // }
         
         // ==================== BILAN FINAL ====================
         $printer->setJustification(Printer::JUSTIFY_CENTER);
