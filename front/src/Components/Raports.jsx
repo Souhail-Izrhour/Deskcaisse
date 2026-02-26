@@ -351,7 +351,7 @@ function Raports() {
   };
 
   return (
-    <div className="min-h-screen bg-blue-100 pt-2 px-1 sm:px-4 md:px-4 pb-3 sm:pb-4 md:pb-6">
+    <div className="min-h-screen bg-blue-100 pt-2 px-1 sm:px-2 md:px-3 pb-3 sm:pb-4 md:pb-6">
       <div className="max-w-7xl mx-auto">
         
         {/* Modals */}
@@ -370,26 +370,26 @@ function Raports() {
           onClose={closeNotification}
         />
 
-        {/* Filtres */}
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-6 mb-4">
-          <div className="flex items-center mb-4">
-            <FiFilter className="w-5 h-5 text-blue-600 mr-2" />
-            <h2 className="text-lg font-semibold text-gray-900">Filtres</h2>
+        {/* Filtres - Version plus mince */}
+        <div className="bg-white rounded-lg shadow-sm p-3 mb-3">
+          <div className="flex items-center mb-2">
+            <FiFilter className="w-4 h-4 text-blue-600 mr-1" />
+            <h2 className="text-base font-semibold text-gray-900">Filtres</h2>
             {(filters.start_date || filters.end_date || filters.user_id) && (
-              <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+              <span className="ml-1 px-1.5 py-0.5 bg-blue-100 text-blue-800 text-xs rounded-full">
                 Filtres actifs
               </span>
             )}
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
             {/* Date de début */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-gray-700 mb-0.5">
                 Date début
               </label>
               <div className="relative">
-                <FiCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <FiCalendar className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
                 <DatePicker
                   selected={startDate}
                   onChange={handleStartDateChange}
@@ -400,18 +400,18 @@ function Raports() {
                   dateFormat="dd/MM/yyyy"
                   placeholderText="Sélectionner une date"
                   isClearable
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-8 pr-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
             </div>
 
             {/* Date de fin */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-gray-700 mb-0.5">
                 Date fin
               </label>
               <div className="relative">
-                <FiCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <FiCalendar className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
                 <DatePicker
                   selected={endDate}
                   onChange={handleEndDateChange}
@@ -423,21 +423,21 @@ function Raports() {
                   dateFormat="dd/MM/yyyy"
                   placeholderText="Sélectionner une date"
                   isClearable
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-8 pr-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
               </div>
             </div>
 
             {/* Sélection utilisateur */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-xs font-medium text-gray-700 mb-0.5">
                 Serveur
               </label>
               <select
                 name="user_id"
                 value={filters.user_id}
                 onChange={handleFilterChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
                 <option value="">Tous les serveurs</option>
                 {users.map(user => (
@@ -449,10 +449,10 @@ function Raports() {
             </div>
 
             {/* Actions */}
-            <div className="flex items-end space-x-2">
+            <div className="flex items-end space-x-1">
               <button
                 onClick={resetFilters}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-150"
+                className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-150"
               >
                 Réinitialiser
               </button>
@@ -460,44 +460,44 @@ function Raports() {
           </div>
         </div>
 
-        {/* Résumé et bouton impression - BASÉ SUR LES SHIFTS SÉLECTIONNÉS */}
+        {/* Résumé et bouton impression - Version plus mince */}
         {filteredShifts.length > 0 && (
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-6 mb-4">
+          <div className="bg-white rounded-lg shadow-sm p-3 mb-3">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-              <div className="mb-4 sm:mb-0">
+              <div className="mb-3 sm:mb-0">
                
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div>
-                    <p className="text-sm text-gray-600">Shifts sélectionnés</p>
-                    <p className="text-2xl font-bold text-blue-600">{selectedShifts.length}</p>
+                    <p className="text-xs text-gray-600">Shifts sélectionnés</p>
+                    <p className="text-xl font-bold text-blue-600">{selectedShifts.length}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Total ventes</p>
-                    <p className="text-2xl font-bold text-green-600">
+                    <p className="text-xs text-gray-600">Total ventes</p>
+                    <p className="text-xl font-bold text-green-600">
                       {formatCurrency(selectedTotals.totalVentes)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Total charges</p>
-                    <p className="text-2xl font-bold text-red-600">
+                    <p className="text-xs text-gray-600">Total charges</p>
+                    <p className="text-xl font-bold text-red-600">
                       {formatCurrency(selectedTotals.totalCharges)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Net</p>
-                    <p className={`text-2xl font-bold ${selectedTotals.totalNet >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <p className="text-xs text-gray-600">Net</p>
+                    <p className={`text-xl font-bold ${selectedTotals.totalNet >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {formatCurrency(selectedTotals.totalNet)}
                     </p>
                   </div>
                 </div>
                 {filters.start_date && filters.end_date && (
-                  <p className="text-sm text-blue-600 mt-2">
+                  <p className="text-xs text-blue-600 mt-1.5">
                     Période sélectionnée : du {new Date(filters.start_date).toLocaleDateString('fr-FR')} au {new Date(filters.end_date).toLocaleDateString('fr-FR')}
                   </p>
                 )}
                 {selectedShifts.length === 0 && filters.start_date && filters.end_date && (
-                  <p className="text-sm text-orange-600 mt-2">
-                    ⚠️ Aucun shift sélectionné. Utilisez les cases à cocher pour sélectionner des shifts.
+                  <p className="text-xs text-orange-600 mt-1.5">
+                    ⚠️ Aucun shift sélectionné
                   </p>
                 )}
               </div>
@@ -505,7 +505,7 @@ function Raports() {
               <button
                 onClick={printPeriodReport}
                 disabled={printing || !filters.start_date || !filters.end_date || selectedShifts.length === 0}
-                className={`px-6 py-3 rounded-lg text-white font-medium flex items-center justify-center ${
+                className={`px-4 py-2 rounded-lg text-white text-sm font-medium flex items-center justify-center ${
                   printing || !filters.start_date || !filters.end_date || selectedShifts.length === 0
                     ? 'bg-gray-400 cursor-not-allowed' 
                     : 'bg-blue-600 hover:bg-blue-700'
@@ -519,39 +519,39 @@ function Raports() {
                 }
               >
                 {printing ? (
-                  <FaSpinner className="animate-spin w-5 h-5 mr-2" />
+                  <FaSpinner className="animate-spin w-4 h-4 mr-1" />
                 ) : (
-                  <FiPrinter className="w-5 h-5 mr-2" />
+                  <FiPrinter className="w-4 h-4 mr-1" />
                 )}
-                {printing ? 'Impression...' : `Imprimer ${selectedShifts.length} shift(s) sélectionné(s)`}
+                {printing ? 'Impression...' : `Imprimer ${selectedShifts.length} shift(s)`}
               </button>
             </div>
           </div>
         )}
 
-        {/* Tableau des shifts */}
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
+        {/* Tableau des shifts - Version plus compacte */}
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden ">
+          <div className="overflow-x-auto max-h-[63vh] overflow-y-auto">
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
                   {/* Colonne pour la sélection */}
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     <button
                       onClick={handleSelectAll}
                       className="flex items-center hover:text-gray-700"
                       disabled={!filters.start_date || !filters.end_date}
                     >
                       {selectAll ? (
-                        <FiCheckSquare className="w-5 h-5 text-blue-600" />
+                        <FiCheckSquare className="w-4 h-4 text-blue-600" />
                       ) : (
-                        <FiSquare className="w-5 h-5" />
+                        <FiSquare className="w-4 h-4" />
                       )}
-                      <span className="ml-2">Tous</span>
+                      <span className="ml-1 text-xs">Tous</span>
                     </button>
                   </th>
                   <th 
-                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('started_at')}
                   >
                     <div className="flex items-center">
@@ -560,7 +560,7 @@ function Raports() {
                     </div>
                   </th>
                   <th 
-                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('ended_at')}
                   >
                     <div className="flex items-center">
@@ -569,7 +569,7 @@ function Raports() {
                     </div>
                   </th>
                   <th 
-                    className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSort('user_id')}
                   >
                     <div className="flex items-center">
@@ -577,16 +577,16 @@ function Raports() {
                       {getSortIcon('user_id')}
                     </div>
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Durée
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Ventes
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Charges
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Net
                   </th>
                 </tr>
@@ -594,22 +594,22 @@ function Raports() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {loading ? (
                   <tr>
-                    <td colSpan="8" className="px-6 py-12 text-center">
+                    <td colSpan="8" className="px-4 py-8 text-center">
                       <div className="flex flex-col items-center justify-center">
-                        <FaSpinner className="animate-spin h-10 w-10 text-blue-600 mb-4" />
-                        <p className="text-gray-600">Chargement des rapports...</p>
+                        <FaSpinner className="animate-spin h-8 w-8 text-blue-600 mb-3" />
+                        <p className="text-sm text-gray-600">Chargement des rapports...</p>
                       </div>
                     </td>
                   </tr>
                 ) : filteredShifts.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="px-6 py-12 text-center">
+                    <td colSpan="8" className="px-4 py-8 text-center">
                       <div className="flex flex-col items-center justify-center">
-                        <div className="w-16 h-16 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl flex items-center justify-center mb-4">
-                          <FiCalendar className="w-8 h-8 text-purple-400" />
+                        <div className="w-12 h-12 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl flex items-center justify-center mb-3">
+                          <FiCalendar className="w-6 h-6 text-purple-400" />
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucun shift trouvé</h3>
-                        <p className="text-gray-500">Ajustez vos filtres pour voir les résultats</p>
+                        <h3 className="text-base font-semibold text-gray-900 mb-1">Aucun shift trouvé</h3>
+                        <p className="text-xs text-gray-500">Ajustez vos filtres</p>
                       </div>
                     </td>
                   </tr>
@@ -624,57 +624,57 @@ function Raports() {
                         className={`hover:bg-gray-50 cursor-pointer ${isSelected ? 'bg-blue-50' : ''}`}
                         onClick={() => filters.start_date && filters.end_date && handleSelectShift(shift.id)}
                       >
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <button className="flex items-center">
                             {isSelected ? (
-                              <FiCheckSquare className="w-5 h-5 text-blue-600" />
+                              <FiCheckSquare className="w-4 h-4 text-blue-600" />
                             ) : (
-                              <FiSquare className="w-5 h-5 text-gray-400" />
+                              <FiSquare className="w-4 h-4 text-gray-400" />
                             )}
                           </button>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-900">
                           {formatDateTime(shift.started_at)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-900">
                           {shift.ended_at ? formatDateTime(shift.ended_at) : 
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
                               En cours
                             </span>
                           }
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <div className="flex items-center">
-                            <div className="flex-shrink-0 h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                              <FiUser className="w-4 h-4 text-blue-600" />
+                            <div className="flex-shrink-0 h-6 w-6 rounded-lg bg-blue-100 flex items-center justify-center">
+                              <FiUser className="w-3 h-3 text-blue-600" />
                             </div>
-                            <div className="ml-3">
-                              <div className="text-sm font-medium text-gray-900">
+                            <div className="ml-2">
+                              <div className="text-xs font-medium text-gray-900">
                                 {getUserName(shift)}
                               </div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-500">
                           {shift.duration || "—"}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-900">
                           <div className="flex items-center">
-                            <FiTrendingUp className="w-4 h-4 text-green-500 mr-2" />
+                            <FiTrendingUp className="w-3 h-3 text-green-500 mr-1" />
                             {formatCurrency(shift.ventes)}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <td className="px-4 py-3 whitespace-nowrap text-xs text-gray-900">
                           <div className="flex items-center">
-                            <FiTrendingDown className="w-4 h-4 text-red-500 mr-2" />
+                            <FiTrendingDown className="w-3 h-3 text-red-500 mr-1" />
                             {formatCurrency(shift.charges)}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${
                             net >= 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                           }`}>
-                            {net >= 0 ? <FiTrendingUp className="w-3 h-3 mr-1" /> : <FiTrendingDown className="w-3 h-3 mr-1" />}
+                            {net >= 0 ? <FiTrendingUp className="w-3 h-3 mr-0.5" /> : <FiTrendingDown className="w-3 h-3 mr-0.5" />}
                             {formatCurrency(net)}
                           </span>
                         </td>
@@ -684,20 +684,20 @@ function Raports() {
                 )}
               </tbody>
               
-              {/* Pied de tableau avec totaux des shifts sélectionnés */}
+              {/* Pied de tableau avec totaux des shifts sélectionnés - Version compacte */}
               {selectedShifts.length > 0 && (
                 <tfoot className="bg-blue-50">
                   <tr>
-                    <td colSpan="5" className="px-6 py-4 text-sm font-semibold text-gray-900">
-                      Totaux des {selectedShifts.length} shift(s) sélectionné(s)
+                    <td colSpan="5" className="px-4 py-3 text-xs font-semibold text-gray-900">
+                      Totaux ({selectedShifts.length})
                     </td>
-                    <td className="px-6 py-4 text-sm font-semibold text-green-600">
+                    <td className="px-4 py-3 text-xs font-semibold text-green-600">
                       {formatCurrency(selectedTotals.totalVentes)}
                     </td>
-                    <td className="px-6 py-4 text-sm font-semibold text-red-600">
+                    <td className="px-4 py-3 text-xs font-semibold text-red-600">
                       {formatCurrency(selectedTotals.totalCharges)}
                     </td>
-                    <td className="px-6 py-4 text-sm font-semibold">
+                    <td className="px-4 py-3 text-xs font-semibold">
                       <span className={selectedTotals.totalNet >= 0 ? 'text-green-600' : 'text-red-600'}>
                         {formatCurrency(selectedTotals.totalNet)}
                       </span>
