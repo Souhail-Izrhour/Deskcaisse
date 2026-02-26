@@ -1,7 +1,7 @@
-@//# localhost name resolution is handled within DNS itself.
-#	127.0.0.1       localhost
-#	::1             localhost
-127.0.0.1 hlasstech
+::@//# localhost name resolution is handled within DNS itself.
+::#	127.0.0.1       localhost
+::#	::1             localhost
+::127.0.0.1 hlasstech
 
 echo off
 title DeskCaisse - Lancement
@@ -22,7 +22,7 @@ start "" /B npm start > "%TEMP%\frontend_log.txt" 2>&1
 :: ==============================
 :: Attente 10 secondes pour que les serveurs démarrent
 :: ==============================
-timeout /t 10 /nobreak > nul
+timeout /t 30 /nobreak > nul
 
 :: ==============================
 :: Ouverture de la PWA Chrome maximisée
