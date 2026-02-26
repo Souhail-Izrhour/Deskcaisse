@@ -503,61 +503,26 @@ function Produits() {
         />
 
         {/* Header */}
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-6 mb-2 sm:mb-3">
-          <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+            <div className="bg-white rounded-lg shadow-sm p-3 mb-2">
+          <div className="flex flex-col space-y-2 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-center sm:text-left">
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Gestion des Produits</h1>
-              <p className="text-gray-600 mt-1 sm:mt-2 text-sm sm:text-base">Gérez votre inventaire de produits</p>
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900">Gestion des Produits</h1>
+              <p className="text-gray-600 text-xs sm:text-sm">Organisez votre inventaire de produits</p>
             </div>
             <button
               onClick={openAddModal}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition duration-200 flex items-center justify-center text-sm sm:text-base shadow-sm hover:shadow-md"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg font-medium transition duration-200 flex items-center justify-center text-xs sm:text-sm shadow-sm hover:shadow-md"
             >
-              <FaPlus className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+              <FaPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1" />
               <span className="hidden xs:inline">Ajouter un produit</span>
               <span className="xs:hidden">Ajouter</span>
             </button>
-          </div>
-
-          {/* Filtres */}
-          <div className="mt-4 sm:mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Rechercher un produit
-              </label>
-              <input
-                type="text"
-                name="search"
-                value={filters.search}
-                onChange={handleSearchChange}
-                placeholder="Nom, code-barres..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Filtrer par catégorie
-              </label>
-              <select
-                name="category_id"
-                value={filters.category_id}
-                onChange={handleFilterChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-sm"
-              >
-                <option value="">Toutes les catégories</option>
-                {categories.map(category => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
         </div>
 
         {/* Tableau */}
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto max-h-[80vh] overflow-y-auto">
             {/* Version Desktop */}
             <table className="w-full hidden sm:table">
               <thead className="bg-gray-50">

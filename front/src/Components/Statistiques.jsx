@@ -189,10 +189,8 @@ function Statistiques() {
         />
 
         {/* Header */}
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-2 mb-2 sm:mb-3 inline-block">
-          <p className="text-gray-600 text-sm sm:text-base">
-            Vous trouvez ici les statistiques détaillées du shift en cours.
-          </p>
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm p-3 mb-2">
+           <p className="text-gray-600 text-xs sm:text-sm">Consultez l'historique des plages horaires de travail</p>
         </div>
 
         {/* Conteneur principal */}

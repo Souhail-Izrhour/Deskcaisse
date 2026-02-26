@@ -439,16 +439,16 @@ function Charges() {
         />
 
         {/* Header */}
-        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-2 mb-2 sm:mb-3">
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm p-3 sm:p-2 mb-2 sm:mb-3">
           <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-center sm:text-left">
-              <p className="text-gray-600  text-sm sm:text-base">Vous trouvez ici les charges du shift en cours.</p>          
+              <p className="text-gray-600  text-xs sm:text-sm">Vous trouvez ici les charges du shift en cours.</p>          
             </div>
             <button
               onClick={openAddModal}
               disabled={!shiftActive || fetching}
               className={`
-                bg-blue-600 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium 
+                bg-blue-600 hover:bg-blue-700 text-white px-3 sm:px-4  sm:py-2 rounded-lg font-medium 
                 transition duration-200 flex items-center justify-center text-sm sm:text-base shadow-sm hover:shadow-md
                 ${!shiftActive || fetching ? 'opacity-50 cursor-not-allowed' : ''}
               `}
