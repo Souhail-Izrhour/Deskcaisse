@@ -20,7 +20,7 @@ import {
   FaCheck
 } from "react-icons/fa";
 import { HiOutlineBuildingOffice2 } from "react-icons/hi2";
-import { FiMail, FiPhone, FiUser, FiCalendar, FiRefreshCw } from "react-icons/fi";
+import { FiMail, FiPhone, FiUser,FiRefreshCw } from "react-icons/fi";
 
 function Allusers() {
   const [users, setUsers] = useState([]);
