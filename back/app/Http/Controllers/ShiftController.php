@@ -812,7 +812,7 @@ public function printPeriodReport(Request $request)
     foreach ($shifts as $shift) {
         $shiftCharges = Charge::where('user_id', $shift->user_id)
             ->where('tenant_id', $tenantId)
-            ->whereBetween('created_at', [$shift->started_at, $shift->ended_at ?? $shift->started_at])
+            ->whereBetween('created_at', [$shift->started_at, $shift->ended_at ?? now()])
             ->get()
             ->map(function($charge) use ($shift) {
                 // Ajouter les informations du shift à chaque charge
