@@ -38,6 +38,8 @@ Route::middleware('auth:sanctum')->group(function () {
           Route::post('/tenants', [TenantController::class, 'store']);
           Route::patch('/tenants/{tenantId}/suspend', [SuperController::class, 'SuspendTenant']);
           Route::patch('/tenants/{tenantId}/reactivate', [SuperController::class, 'reactivateTenant']);
+          Route::get('/all-users', [SuperController::class, 'index']);
+          Route::get('/tenants', [SuperController::class, 'allTenants']);
 });
 
 
@@ -96,6 +98,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::patch('/users/{user}/deactivate', [AuthController::class, 'deactivate']); // Désactiver
             Route::patch('/users/{user}/activate', [AuthController::class, 'activate']); // Activer
             Route::delete('/users/{user}', [AuthController::class, 'destroy']);             // Supprimer définitivement
+            Route::post('/users/{user}/restore', [AuthController::class, 'restaurer']);     // Restaurer un utilisateur
 
     //-----------------
     // Orders

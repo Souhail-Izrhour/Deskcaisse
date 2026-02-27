@@ -19,6 +19,9 @@ import Produits from "./Components/Produits";
 import Categories from "./Components/Categories";
 import Fournisseurs from "./Components/Fournisseurs";
 import Settings from "./Components/Settings";
+import SuperDashboard from "./SuperSection/SuperDashboard";
+import Tenants from "./SuperSection/Tenants";
+import Allusers from "./SuperSection/Allusers";
 
 // Sécurité
 import ProtectedRoute from "./Services/ProtectedRoute";
@@ -110,15 +113,20 @@ function App() {
           path="/super"
           element={
             <ProtectedRoute allowedRoles={["super_admin"]}>
-              <div>Super Admin Dashboard 
-                <button onClick={() => {
-                  localStorage.clear();
-                  window.location.href = "/login";
-                }}>Logout</button>
-              </div>
+             <SuperDashboard />
             </ProtectedRoute>
           }
         />
+        <Route path="/super/Tenant" element={
+            <ProtectedRoute allowedRoles={["super_admin"]}>
+             <Tenants />
+            </ProtectedRoute>
+          } />
+        <Route path="/super/Allusers" element={
+            <ProtectedRoute allowedRoles={["super_admin"]}>
+             <Allusers />
+            </ProtectedRoute>
+          } />
 
       </Routes>
     </Router>

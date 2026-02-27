@@ -165,4 +165,26 @@ class AuthController extends Controller
         $user->delete();
         return response()->json(['message' => 'Utilisateur supprimé définitivement']);
     }
+    public function restaurer($id)
+{
+    $user = User::withTrashed()->find($id);
+
+    if (! $user) {
+        return response()->json([
+            'message' => 'Utilisateur non trouvé.'
+        ], 404);
+    }
+
+    if (! $user->trashed()) {
+        return response()->json([
+            'message' => 'Cet utilisateur n\'est pas supprimé.'
+        ], 400);
+    }
+
+    $user->restore();
+
+    return response()->json([
+        'message' => 'Utilisateur restauré avec succès'
+    ]);
+}
 }

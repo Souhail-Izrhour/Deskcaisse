@@ -36,7 +36,7 @@ class CheckTenant
         if (!$tenant || !$tenant->is_active) {
             return response()->json([
                 'success' => false,
-                  'message' => "L'accès à votre compte est temporairement suspendu car votre abonnement a expiré. Merci de contacter notre service client au " . env('TENANT_SUPPORT_PHONE'),
+                  'message' => "L'accès à votre compte est temporairement suspendu car votre abonnement a expiré. Merci de contacter notre service client au " . env('TENANT_SUPPORT'),
             ], 403);
         }
 

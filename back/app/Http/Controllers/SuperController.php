@@ -4,10 +4,24 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Tenant;
+use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
 class SuperController extends Controller
 {
+    public function allTenants()
+    {
+        $tenants = Tenant::all();
+        return response()->json(['success' => true, 'data' => $tenants]);
+    }
+    public function index(Request $request)
+    {
+       $users = User::withTrashed()->with(['tenant' => function ($query) {$query->withTrashed();}])->get();
+        return response()->json([
+            'success' => true,
+            'data' => $users
+        ]);
+    }
     public function SuspendTenant(Request $request, $tenantId)
     {
         // Trouver tous les utilisateurs associés au tenant
