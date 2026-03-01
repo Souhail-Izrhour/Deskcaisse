@@ -20,7 +20,7 @@ class AuthController extends Controller
             'nom' => 'required|string|max:255',
             'prenom' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,NULL,id,tenant_id,' . $request->user()->tenant_id,
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required|string|min:6|confirmed',
             'role' => 'in:admin,serveur',
         ]);
 
@@ -119,7 +119,7 @@ class AuthController extends Controller
             'nom' => 'string|max:255',
             'prenom' => 'string|max:255',
             'email' => 'string|email|max:255|unique:users,email,' . $user->id . ',id,tenant_id,' . $request->user()->tenant_id,
-            'password' => 'string|min:8|confirmed',
+            'password' => 'string|min:6|confirmed',
             'role' => 'in:admin,serveur',
         ]);
 
