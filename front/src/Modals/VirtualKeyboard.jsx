@@ -1,11 +1,12 @@
 // Modals/VirtualKeyboard.jsx
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState  } from "react";
 import Keyboard from "react-simple-keyboard";
 import "react-simple-keyboard/build/css/index.css";
 import { FiX } from "react-icons/fi";
 
 function VirtualKeyboard({ inputName, inputValue, onChange, onKeyPress, onHide }) {
   const keyboard = useRef();
+  const [layoutName, setLayoutName] = useState("default");
 
   useEffect(() => {
     if (keyboard.current && inputValue !== undefined) {
@@ -18,8 +19,14 @@ function VirtualKeyboard({ inputName, inputValue, onChange, onKeyPress, onHide }
   };
 
   const handleKeyPress = (button) => {
-    onKeyPress(button);
-  };
+  if (button === "{caps}") {
+    const newLayout = layoutName === "default" ? "caps" : "default";
+    setLayoutName(newLayout);
+    return;
+  }
+
+  onKeyPress(button);
+};
 
   return (
     <div className="virtual-keyboard-container relative">
@@ -36,29 +43,38 @@ function VirtualKeyboard({ inputName, inputValue, onChange, onKeyPress, onHide }
         </button>
       </div>
       
-      <Keyboard
-        keyboardRef={(r) => (keyboard.current = r)}
-        onChange={handleChange}
-        onKeyPress={handleKeyPress}
-        inputName={inputName}
-        layoutName="default"
-        layout={{
-          default: [
-            "1 2 3 4 5 6 7 8 9 0 .",
-            "q w e r t y u i o p",
-            "a s d f g h j k l",
-            "z x c v b n m @",
-             "@metropole.com",
-            "{space} {bksp} .com",
-          ],
-        }}
-        display={{
-          "{bksp}": "⌫",
-          "{space}": "Espace",
-        }}
-        theme={"hg-theme-default hg-layout-default"}
-        physicalKeyboardHighlight={false}
-      />
+          <Keyboard
+      keyboardRef={(r) => (keyboard.current = r)}
+      onChange={handleChange}
+      onKeyPress={handleKeyPress}
+      inputName={inputName}
+      layoutName={layoutName}
+      layout={{
+        default: [
+          "1 2 3 4 5 6 7 8 9 0",
+          "q w e r t y u i o p",
+          "a s d f g h j k l",
+          "z x c v b n m @",
+          "@metropole.com + - .",
+          "{caps} {space} {bksp}",
+        ],
+        caps: [
+          "1 2 3 4 5 6 7 8 9 0",
+          "Q W E R T Y U I O P",
+          "A S D F G H J K L",
+          "Z X C V B N M @",
+           "@metropole.com + - .",
+          "{caps} {space} {bksp}",
+        ]
+      }}
+      display={{
+        "{bksp}": "⌫",
+        "{space}": "Espace",
+        "{caps}": "Upper"
+      }}
+      theme={"hg-theme-default hg-layout-default"}
+      physicalKeyboardHighlight={false}
+    />
     </div>
   );
 }

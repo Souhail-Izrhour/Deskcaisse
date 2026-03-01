@@ -107,17 +107,21 @@ function Produits() {
   }, []);
 
   // Gestion du clavier virtuel
-  const handleKeyboardChange = useCallback((input) => {
+    const handleKeyboardChange = useCallback((input) => {
     setKeyboardInput(input);
-    
-    if (inputName === "name") {
-      isEditing 
-        ? setEditData(prev => ({ ...prev, name: input }))
-        : setNewProduct(prev => ({ ...prev, name: input }));
-    } else if (inputName === "barcode") {
-      isEditing 
-        ? setEditData(prev => ({ ...prev, barcode: input }))
-        : setNewProduct(prev => ({ ...prev, barcode: input }));
+
+    if (!inputName) return;
+
+    if (isEditing) {
+      setEditData(prev => ({
+        ...prev,
+        [inputName]: input
+      }));
+    } else {
+      setNewProduct(prev => ({
+        ...prev,
+        [inputName]: input
+      }));
     }
   }, [inputName, isEditing]);
 
@@ -836,11 +840,11 @@ function Produits() {
                           Prix *
                         </label>
                         <input
-                          type="number"
-                          step="0.01"
-                          min="0"
+                          type="text"
+                          inputMode="decimal"
                           value={isEditing ? editData.price : newProduct.price}
                           onChange={(e) => handleInputChange(e, "price")}
+                          onFocus={() => handleInputFocus("price")}
                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 text-sm sm:text-base"
                           required
                         />
