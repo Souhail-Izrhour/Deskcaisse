@@ -6,6 +6,7 @@ import { FaSpinner } from "react-icons/fa";
 import AxiosClient from "../Services/AxiosClient";
 import ConfirmationModal from "../Modals/ConfirmationModal";
 import NotificationModal from "../Modals/NotificationModal";
+import hlasstechChromeenobg from "../Assets/hlasstechChromeenobg.png"
 
 function Layout() {
   const role = localStorage.getItem("user_role");
@@ -313,8 +314,13 @@ function Layout() {
       {/* Layout avec bouton toggle */}
       <div className="p-2 border-b border-gray-200 flex items-center justify-between">
         {!isCollapsed && (
-          <div className="flex items-center gap-3">
-            <h1 className="text-lg font-extralight text-cyan-900">HLassTech - POS</h1>
+          <div className="flex items-center gap-1">
+             <img
+            src={hlasstechChromeenobg}
+            alt="HlassTech"
+            className="h-8 object-contain"
+          />
+            <h1 className="text-lg font-extralight text-cyan-900">tech - POS</h1>
           </div>
         )}
         <button

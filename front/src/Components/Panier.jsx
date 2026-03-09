@@ -16,6 +16,7 @@ export default function Panier({
 }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [montantDonne, setMontantDonne] = useState("");
 
   // Mise à jour de l'horloge chaque seconde
   useEffect(() => {
@@ -62,6 +63,11 @@ export default function Panier({
   };  
 
   const total = panier.reduce((sum, p) => sum + parseFloat(p.price) * p.quantite, 0);
+  
+  // Calcul de la monnaie à rendre
+  const montantDonneNum = parseFloat(montantDonne) || 0;
+  const monnaieARendre = montantDonneNum >= total ? montantDonneNum - total : 0;
+  const manque = montantDonneNum < total ? total - montantDonneNum : 0;
 
   // Hauteur pour 5 items (chaque item ~75px + margin)
   const maxHeight = 5 * 75; // px
@@ -210,6 +216,46 @@ export default function Panier({
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Total</span>
               <span className="font-bold text-lg text-blue-600">{total.toFixed(2)} DH</span>
+            </div>
+
+            {/* Montant donné */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-gray-600">Montant donné</span>
+                <div className="flex items-center">
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={montantDonne}
+                    onChange={(e) => setMontantDonne(e.target.value)}
+                    placeholder="0"
+                    className="w-32 px-3  text-right border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    disabled={validating}
+                  />
+                  <span className="ml-1 text-gray-600">DH</span>
+                </div>
+              </div>
+
+              {/* Monnaie à rendre */}
+              {montantDonneNum > 0 && (
+                <div className={`flex justify-between items-center p-1 rounded-lg ${
+                  montantDonneNum < total 
+                    ? 'bg-yellow-50' 
+                    : 'bg-green-50'
+                }`}>
+                  <span className={`text-sm font-medium ${
+                    montantDonneNum < total ? 'text-yellow-700' : 'text-green-700'
+                  }`}>
+                    {montantDonneNum < total ? 'Manque' : 'Monnaie à rendre'}
+                  </span>
+                  <span className={`font-bold ${
+                    montantDonneNum < total ? 'text-yellow-700' : 'text-green-700'
+                  }`}>
+                    {manque > 0 ? `${manque.toFixed(2)} DH` : `${monnaieARendre.toFixed(2)} DH`}
+                  </span>
+                </div>
+              )}
             </div>
             
             <button
