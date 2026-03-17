@@ -547,5 +547,4 @@ function Shifts() {
     </div>
   );
 }
-
 export default Shifts;
