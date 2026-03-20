@@ -174,7 +174,9 @@ public function end()
                 $end = $shift->ended_at ?? now();
                 $diff = Carbon::parse($shift->started_at)->diff(Carbon::parse($end));
                 $shift->duration = sprintf('%02d:%02d:%02d', $diff->h + $diff->d * 24, $diff->i, $diff->s);
-
+                //on fait cette fonction par ce que si le shift est en cours on
+                //  doit calculer les ventes et les charges en temps
+                //  réel car les champs ventes et charges dans la table shift sont null jusqu'à la fin du shift
                 if (!$shift->ended_at) {
                     $shift->ventes = Order::where('shift_id', $shift->id)->sum('totalOrder');
                     $shift->charges = Charge::where('user_id', $shift->user_id)
