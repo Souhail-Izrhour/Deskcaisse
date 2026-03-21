@@ -1246,20 +1246,6 @@ function Shifts() {
           </div>
         </div>
       </div>
-      
-      {/* Bouton flottant de rafraîchissement pour mobile */}
-      <button
-        onClick={refreshShifts}
-        disabled={refreshing || loading}
-        className="sm:hidden fixed bottom-4 right-4 z-10 bg-blue-600 text-white rounded-full p-3 shadow-lg hover:bg-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-        title="Actualiser"
-      >
-        {refreshing || loading ? (
-          <FaSpinner className="animate-spin w-5 h-5" />
-        ) : (
-          <FiRefreshCw className="w-5 h-5" />
-        )}
-      </button>
     </div>
   );
 }
