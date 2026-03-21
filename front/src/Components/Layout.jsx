@@ -28,6 +28,7 @@ function Layout() {
   // États pour les modaux
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showEndShiftModal, setShowEndShiftModal] = useState(false);
+  const [showStartShiftModal, setShowStartShiftModal] = useState(false); // Nouvel état pour le modal de début de shift
   const [notification, setNotification] = useState({
     show: false,
     type: "info",
@@ -131,6 +132,11 @@ function Layout() {
     setNotification(prev => ({ ...prev, show: false }));
   };
 
+  // Fonction pour ouvrir la confirmation de début de shift
+  const openStartShiftConfirmation = () => {
+    setShowStartShiftModal(true);
+  };
+
   const startShift = async () => {
     if (isStartingShift) return; // Empêcher les clics multiples
     
@@ -140,6 +146,7 @@ function Layout() {
       console.log("Shift démarré :", response.data);
       setShiftActive(true);
       showNotification("success", "Succès", "Shift démarré avec succès");
+      setShowStartShiftModal(false); // Fermer le modal après succès
     } catch (error) {
       console.error("Erreur start shift :", error.response?.data || error.message);
       showNotification(
@@ -149,6 +156,7 @@ function Layout() {
       );
     } finally {
       setIsStartingShift(false);
+      setShowStartShiftModal(false);
     }
   };
 
@@ -262,7 +270,7 @@ function Layout() {
           <>
             {!shiftActive && (
               <button
-                onClick={startShift}
+                onClick={openStartShiftConfirmation} // Remplacé startShift par openStartShiftConfirmation
                 disabled={isStartingShift}
                 className={`w-full p-3 rounded-xl hover:bg-gray-200 text-green-700 transition-all duration-200 flex items-center justify-center mb-2 ${
                   isStartingShift ? 'opacity-50 cursor-not-allowed' : ''
@@ -445,7 +453,7 @@ function Layout() {
           <>
             {!shiftActive && (
               <button 
-                onClick={startShift} 
+                onClick={openStartShiftConfirmation} // Remplacé startShift par openStartShiftConfirmation
                 disabled={isStartingShift}
                 className={`w-full ${isCollapsed ? 'p-3 justify-center' : 'py-2 px-2 justify-center gap-3'} flex items-center bg-green-100 hover:bg-green-200 text-green-700 rounded-xl transition-all duration-200 font-medium group mb-2 ${
                   isStartingShift ? 'opacity-50 cursor-not-allowed' : ''
@@ -623,7 +631,7 @@ function Layout() {
             <>
               {!shiftActive && (
                 <button
-                  onClick={startShift}
+                  onClick={openStartShiftConfirmation} // Remplacé startShift par openStartShiftConfirmation
                   disabled={isStartingShift}
                   className={`w-full flex items-center justify-center gap-3 py-3 px-4 bg-green-100 hover:bg-green-200 text-green-700 rounded-xl transition-all duration-200 font-medium mb-2 ${
                     isStartingShift ? 'opacity-50 cursor-not-allowed' : ''
@@ -715,10 +723,9 @@ function Layout() {
       message="Êtes-vous sûr de vouloir vous déconnecter ?"
       confirmText="Déconnexion"
       cancelText="Annuler"
-      loading={isLoggingOut} // Ajoutez cette ligne
+      loading={isLoggingOut}
       onConfirm={() => {
         handleLogout();
-        // Ne pas fermer le modal ici, il sera fermé après l'API
       }}
       onCancel={() => {
         if (!isLoggingOut) {
@@ -727,6 +734,23 @@ function Layout() {
       }}
       type="warning"
     />
+
+      {/* Modal de confirmation pour démarrer le shift */}
+      <ConfirmationModal
+        show={showStartShiftModal}
+        title="Démarrer le Shift"
+        message="Êtes-vous sûr de vouloir démarrer ce shift ?"
+        confirmText="Démarrer le Shift"
+        cancelText="Annuler"
+        loading={isStartingShift} // Passer l'état de chargement au modal
+        onConfirm={startShift}
+        onCancel={() => {
+          if (!isStartingShift) {
+            setShowStartShiftModal(false);
+          }
+        }}
+        type="success"
+      />
 
       {/* Modal de confirmation pour arrêter le shift */}
       <ConfirmationModal

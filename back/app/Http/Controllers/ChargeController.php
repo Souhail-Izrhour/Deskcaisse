@@ -88,6 +88,12 @@ class ChargeController extends Controller
     // ✅ Supprimer une charge
     public function destroy(Charge $charge)
     {
+              // Vérifier si le shift est terminé
+    if ($charge->shift && $charge->shift->ended_at !== null) {
+        return response()->json([
+            'message' => 'Impossible de supprimer une charge d’un shift déjà fermé. veuillez actualiser la page pour voir les changements.'
+        ], 403);
+    }
         DB::transaction(function () use ($charge) {
             $shift = $charge->shift;
             $charge->delete();

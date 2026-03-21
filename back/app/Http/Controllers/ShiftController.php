@@ -165,25 +165,30 @@ public function end()
     {
         $tenantId = Auth::user()->tenant_id;
 
-        $shifts = Shift::with('user')
-            ->where('tenant_id', $tenantId)
-            ->latest()
-            ->get()
-            ->map(function ($shift) use ($tenantId) {
+    $shifts = Shift::with('user')
+        ->where('tenant_id', $tenantId)
+        ->latest()
+        ->get()
+        ->map(function ($shift) {
 
-                $end = $shift->ended_at ?? now();
-                $diff = Carbon::parse($shift->started_at)->diff(Carbon::parse($end));
-                $shift->duration = sprintf('%02d:%02d:%02d', $diff->h + $diff->d * 24, $diff->i, $diff->s);
-                //on fait cette fonction par ce que si le shift est en cours on
-                //  doit calculer les ventes et les charges en temps
-                //  réel car les champs ventes et charges dans la table shift sont null jusqu'à la fin du shift
-                if (!$shift->ended_at) {
-                    $shift->ventes = Order::where('shift_id', $shift->id)->sum('totalOrder');
-                    $shift->charges = Charge::where('user_id', $shift->user_id)
-                        ->whereBetween('created_at', [$shift->started_at, now()])
-                        ->sum('amount');
-                    $shift->net = $shift->ventes - $shift->charges;
-                }
+            $end = $shift->ended_at ?? now();
+
+            // Calcul de la durée
+            $diff = Carbon::parse($shift->started_at)->diff(Carbon::parse($end));
+            $shift->duration = sprintf('%02d:%02d:%02d', $diff->h + $diff->d * 24, $diff->i, $diff->s);
+
+            // Récupérer toutes les commandes et charges pour le shift
+            $shift->orders = Order::with('orderItems')->where('shift_id', $shift->id)->get();
+            $shift->charges_details = Charge::where('user_id', $shift->user_id)
+                ->whereBetween('created_at', [$shift->started_at, $end])
+                ->get();
+
+            // Calcul des totaux pour les shifts en cours
+            if (!$shift->ended_at) {
+                $shift->ventes = $shift->orders->sum('totalOrder');
+                $shift->charges = $shift->charges_details->sum('amount');
+                $shift->net = $shift->ventes - $shift->charges;
+            }
 
                 return $shift;
             });

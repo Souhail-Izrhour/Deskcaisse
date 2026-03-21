@@ -150,15 +150,21 @@ class OrderController extends Controller
     /**
      * Supprimer une commande (soft delete)
      */
-    public function destroy(Request $request, Order $order)
-    {
-
-        $order->delete();
-
+   public function destroy(Request $request, Order $order)
+{
+    // Vérifier si le shift est terminé
+    if ($order->shift && $order->shift->ended_at !== null) {
         return response()->json([
-            'message' => 'Commande supprimée avec succès'
-        ]);
+            'message' => 'Impossible de supprimer une commande d’un shift déjà fermé. veuillez actualiser la page pour voir les changements.'
+        ], 403);
     }
+
+    $order->delete();
+
+    return response()->json([
+        'message' => 'Commande supprimée avec succès'
+    ]);
+}
 
     /**
      * Impression ticket
