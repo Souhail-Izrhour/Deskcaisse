@@ -19,6 +19,7 @@ export default function Settings() {
   
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(false);
+  const [isOpeningDrawer, setIsOpeningDrawer] = useState(false); // État pour l'ouverture du tiroir
 
   // États pour le clavier virtuel
   const [showKeyboard, setShowKeyboard] = useState(true);
@@ -97,6 +98,22 @@ export default function Settings() {
   const closeNotification = useCallback(() => {
     setNotification(prev => ({ ...prev, show: false }));
   }, []);
+
+  // Fonction d'ouverture du tiroir-caisse
+  const openDrawer = async () => {
+    if (isOpeningDrawer) return; // Empêcher les clics multiples
+    
+    setIsOpeningDrawer(true);
+    try {
+      // Appel API pour ouvrir le tiroir-caisse
+      await AxiosClient.post('/ticket-settings/openDrawer');
+      showNotification("success", "Tiroir-caisse ouvert avec succès");
+    } catch (error) {
+      showNotification("error", "Erreur lors de l'ouverture du tiroir-caisse", error);
+    } finally {
+      setIsOpeningDrawer(false);
+    }
+  };
 
   // Gestionnaires pour chaque fonctionnalité
   const handleFooterUpdate = async (e) => {
@@ -413,7 +430,7 @@ export default function Settings() {
           onClose={closeNotification}
         />
 
-        {/* Header avec bouton d'aperçu */}
+        {/* Header avec bouton d'aperçu et bouton tiroir */}
         <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm p-4 sm:p-2 mb-2 sm:mb-3">
           <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-center sm:text-left">
@@ -421,19 +438,42 @@ export default function Settings() {
                 Paramètres du ticket
               </h1>
             </div>
-            <button
-              onClick={() => setShowPreviewModal(true)}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition duration-200 flex items-center justify-center text-sm sm:text-base shadow-sm hover:shadow-md"
-            >
-              {fetching ? (
-                <FaSpinner className="animate-spin w-5 h-5" />
-              ) : (
-                <>
-                  <FiEye className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                  <span>Aperçu du ticket</span>
-                </>
-              )}
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                onClick={openDrawer}
+                disabled={isOpeningDrawer}
+                className={`bg-cyan-200 hover:bg-cyan-300 text-gray-700 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition duration-200 flex items-center justify-center text-sm sm:text-base shadow-sm hover:shadow-md ${
+                  isOpeningDrawer ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                {isOpeningDrawer ? (
+                  <>
+                    <FaSpinner className="animate-spin w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                    <span>Ouverture...</span>
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    <span>Tiroir caisse</span>
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => setShowPreviewModal(true)}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium transition duration-200 flex items-center justify-center text-sm sm:text-base shadow-sm hover:shadow-md"
+              >
+                {fetching ? (
+                  <FaSpinner className="animate-spin w-5 h-5" />
+                ) : (
+                  <>
+                    <FiEye className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                    <span>Aperçu du ticket</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -563,13 +603,14 @@ export default function Settings() {
                     </div>
                     
                     <form onSubmit={handleFooterUpdate} className="px-6 py-3">
-                      <input
+                      <textarea
                         value={settings.ticket_footer_message || ''}
                         onChange={(e) => handleInputChange(e, "ticket_footer_message")}
                         onFocus={() => handleInputFocus("ticket_footer_message")}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Message qui apparaîtra en bas de vos tickets..."
                         maxLength="255"
+                        rows="3"
                         disabled={fetching}
                       />
                       
