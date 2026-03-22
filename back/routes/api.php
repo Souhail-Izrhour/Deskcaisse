@@ -149,6 +149,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/ticket-settings/telephone', [TicketSettingsController::class, 'updateTelephone']); // Mettre à jour le téléphone
             Route::put('/ticket-settings/adresse', [TicketSettingsController::class, 'updateAdresse']); // Mettre à jour l'adresse
             Route::put('/ticket-settings/currency', [TicketSettingsController::class, 'updateCurrency']); // Mettre à jour la devise
+            Route::post('/ticket-settings/openDrawer', [ShiftController::class, 'openDrawer']); // Ouvrir le tiroir-caisse
 
 });
     });
