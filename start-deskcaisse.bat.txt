@@ -1,33 +1,35 @@
-::@//# localhost name resolution is handled within DNS itself.
-::#	127.0.0.1       localhost
-::#	::1             localhost
-::127.0.0.1 hlasstech
-
-echo off
-title DeskCaisse - Lancement
+@echo off
+title HlassTechPos - Lancement
 
 :: ==============================
-:: Lancement du BACKEND en arrière-plan
+:: Lancement BACKEND
 :: ==============================
-cd /d C:\Users\HP\Desktop\Main\MyProjects\Deskcaisse\back
+cd /d C:\HlassTechPos\back
 start "" /B php -S 127.0.0.1:8000 -t public > "%TEMP%\backend_log.txt" 2>&1
 
 :: ==============================
-:: Lancement du FRONTEND en arrière-plan
+:: Attente démarrage
 :: ==============================
-cd /d C:\Users\HP\Desktop\Main\MyProjects\Deskcaisse\front
-set BROWSER=none
-start "" /B npm start > "%TEMP%\frontend_log.txt" 2>&1
+timeout /t 20 /nobreak > nul
 
 :: ==============================
-:: Attente 10 secondes pour que les serveurs démarrent
+:: Ouverture POS
 :: ==============================
-timeout /t 30 /nobreak > nul
+start "" "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --app=http://localhost:8000 --start-maximized
 
 :: ==============================
-:: Ouverture de la PWA Chrome maximisée
+:: Vérification Internet
 :: ==============================
-:: start "" "C:\Program Files\Google\Chrome\Application\chrome.exe" --app=http://hlasstech:3000 --start-maximized
-start "" "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --app=http://hlasstech:3000 --start-maximized
-exit
- 
+
+:CHECK
+ping 8.8.8.8 -n 1 > nul
+
+if %errorlevel%==0 (
+    echo [%date% %time%] Internet detecte. Lancement du tunnel... >> "%TEMP%\tunnel_log.txt"
+    cd /d C:\
+    cloudflared tunnel run metropole >> "%TEMP%\tunnel_log.txt" 2>&1
+) else (
+    echo [%date% %time%] Pas de connexion Internet. Nouvelle verification dans 10 secondes... >> "%TEMP%\tunnel_log.txt"
+    timeout /t 10 > nul
+    goto CHECK
+)
