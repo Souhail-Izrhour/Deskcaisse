@@ -569,7 +569,8 @@ function Layout() {
           </div>
         </div>
 
-        <nav className="flex-1 p-4 overflow-y-auto">
+        {/* Navigation mobile - SEULE MODIFICATION ICI */}
+        <nav className="flex-1 p-4 overflow-y-auto max-h-[calc(100vh-200px)]">
           <div className="mb-6">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-2">
               Navigation
