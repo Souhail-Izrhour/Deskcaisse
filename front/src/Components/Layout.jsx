@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Outlet } from "react-router-dom";
-import { FiShoppingCart, FiSettings, FiPlay, FiTrendingUp, FiStopCircle, FiUsers, FiClock, FiPackage, FiGrid, FiTruck, FiFileText, FiDollarSign, FiLogOut, FiX, FiMenu, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiShoppingCart, FiSettings, FiPlay, FiTrendingUp, FiStopCircle, FiUsers, FiClock, FiPackage, FiGrid, FiTruck, FiFileText, FiDollarSign, FiLogOut, FiX, FiMenu, FiChevronLeft, FiChevronRight, FiActivity } from "react-icons/fi";
 import { FaSpinner } from "react-icons/fa";
 import AxiosClient from "../Services/AxiosClient";
 import ConfirmationModal from "../Modals/ConfirmationModal";
@@ -194,7 +194,8 @@ function Layout() {
     { path: "/pos/statistiques", label: "Statistiques", icon: <FiTrendingUp />, color: "text-purple-600", bgColor: "hover:bg-purple-50" },
   ];
 
-  const adminItems = [
+  const adminItems = [    
+    { path: "/pos/shifts/active", label: "Shifts Actifs", icon: <FiActivity />, color: "text-cyan-600", bgColor: "hover:bg-cyan-50" },
     { path: "/pos/shifts", label: "Shifts", icon: <FiClock />, color: "text-amber-600", bgColor: "hover:bg-amber-50" },
     { path: "/pos/produits", label: "Produits", icon: <FiPackage />, color: "text-emerald-600", bgColor: "hover:bg-emerald-50" },
     { path: "/pos/categories", label: "Catégories", icon: <FiGrid />, color: "text-pink-600", bgColor: "hover:bg-pink-50" },

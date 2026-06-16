@@ -115,6 +115,7 @@ Route::middleware('auth:sanctum')->group(function () {
     //------------------
     // Shifts 
             Route::get('/shifts', [ShiftController::class, 'index']);           // Lister tous les shifts
+            Route::get('/shifts/active', [ShiftController::class, 'shiftsActive']); // Obtenir les shifts actifs
             Route::get('/shifts/{shift}', [ShiftController::class, 'show']);        // Afficher un shift spécifique
             Route::Delete('/shifts/{shift}', [ShiftController::class, 'destroy']);    // Supprimer un shift 
             Route::post('/shifts/{shift}/print', [ShiftController::class, 'printShift']);

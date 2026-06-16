@@ -12,6 +12,7 @@ import Layout from "./Components/Layout";
 import Caisse from "./Components/Caisse";
 import Charges from "./Components/Charges";
 import Statistiques from "./Components/Statistiques";
+import ShiftsActive from "./Components/ShiftsActive";
 import Shifts from "./Components/Shifts";
 import Raports from "./Components/Raports";
 import Utilisateurs from "./Components/Utilisateurs";
@@ -50,6 +51,14 @@ function App() {
           <Route path="statistiques" element={<Statistiques />} />
 
           {/* ADMIN */}
+          <Route
+            path="shifts/active"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <ShiftsActive />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="shifts"
             element={

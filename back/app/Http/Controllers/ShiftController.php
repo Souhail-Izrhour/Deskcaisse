@@ -111,7 +111,45 @@ public function end()
     ]);
 }
 
-
+// ========================
+// Récupérer les shifts actifs (pour l'admin)
+// ========================
+public function shiftsActive()
+{
+    $tenantId = Auth::user()->tenant_id;
+    
+    $shifts = Shift::with('user')
+        ->where('tenant_id', $tenantId)
+        ->whereNull('ended_at')
+        ->latest()
+        ->get()
+        ->map(function ($shift) {
+            // Calcul de la durée
+            $diff = Carbon::parse($shift->started_at)->diff(now());
+            $shift->duration = sprintf('%02d:%02d:%02d', $diff->h + $diff->d * 24, $diff->i, $diff->s);
+            
+            // Récupérer les commandes et charges pour le shift actif
+            $shift->orders = Order::with('orderItems')
+                ->where('user_id', $shift->user_id)
+                ->where('tenant_id', $shift->tenant_id)
+                ->whereBetween('created_at', [$shift->started_at, now()])
+                ->get();
+            
+            $shift->charges_details = Charge::where('user_id', $shift->user_id)
+                ->where('tenant_id', $shift->tenant_id)
+                ->whereBetween('created_at', [$shift->started_at, now()])
+                ->get();
+            
+            // Calcul des totaux
+            $shift->ventes = $shift->orders->sum('totalOrder');
+            $shift->charges = $shift->charges_details->sum('amount');
+            $shift->net = $shift->ventes - $shift->charges;
+            
+            return $shift;
+        });
+    
+    return response()->json(['data' => $shifts]);
+}
     // ========================
     // Stats live du shift en cours
     // ========================
