@@ -687,7 +687,7 @@ function Shifts() {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {orders.map((order) => (
+                      {[...orders].reverse().map((order) => (
                         <div 
                           key={order.id} 
                           className="bg-white rounded-lg p-3 border border-gray-200 hover:border-purple-200 transition-colors"
