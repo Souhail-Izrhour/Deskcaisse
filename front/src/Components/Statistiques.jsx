@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from "react";
-import { useOutletContext } from "react-router-dom";
+import React, { useEffect, useState, useCallback, useRef } from "react";
+import { useOutletContext, useNavigate } from "react-router-dom";
 import AxiosClient from "../Services/AxiosClient";
 import { useErrorHandler } from "../hooks/useErrorHandler";
 import SubscriptionModal from "../Modals/SubscriptionModal";
@@ -19,6 +19,7 @@ import { FaTriangleExclamation } from "react-icons/fa6";
 
 function Statistiques() {
   const { shiftActive } = useOutletContext();
+  const navigate = useNavigate();
   
   const [commandes, setCommandes] = useState([]);
   const [shiftStats, setShiftStats] = useState(null);
@@ -28,6 +29,10 @@ function Statistiques() {
   // États pour les chargements des boutons
   const [isPrinting, setIsPrinting] = useState(false);
   const [isOpeningDrawer, setIsOpeningDrawer] = useState(false);
+
+  // Ref pour le timer d'inactivité
+  const inactivityTimerRef = useRef(null);
+  const isDataLoadedRef = useRef(false);
 
   const [notification, setNotification] = useState({
     show: false,
@@ -62,6 +67,98 @@ function Statistiques() {
     setNotification(prev => ({ ...prev, show: false }));
   }, []);
 
+  // Fonction de redirection silencieuse vers POS
+  const redirectToPos = useCallback(() => {
+    // Nettoyer le timer
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+      inactivityTimerRef.current = null;
+    }
+    // Redirection silencieuse vers POS
+    navigate('/pos');
+  }, [navigate]);
+
+  // Fonction pour réinitialiser le timer d'inactivité
+  const resetInactivityTimer = useCallback(() => {
+    // Nettoyer l'ancien timer
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+      inactivityTimerRef.current = null;
+    }
+
+    // Ne démarrer le timer que si les données sont chargées
+    if (!isDataLoadedRef.current) {
+      return;
+    }
+
+    // Démarrer un nouveau timer de 10 secondes
+    inactivityTimerRef.current = setTimeout(() => {
+      redirectToPos();
+    }, 3000); // 3 secondes
+  }, [redirectToPos]);
+
+  // Détecter les interactions utilisateur
+  const handleUserInteraction = useCallback(() => {
+    resetInactivityTimer();
+  }, [resetInactivityTimer]);
+
+  // Ajouter les écouteurs d'événements silencieux
+  useEffect(() => {
+    // Liste des événements à surveiller
+    const events = [
+      'mousemove', 
+      'mousedown', 
+      'click', 
+      'scroll', 
+      'keydown', 
+      'touchstart', 
+      'touchmove',
+      'wheel'
+    ];
+
+    // Ajouter les écouteurs
+    events.forEach(event => {
+      document.addEventListener(event, handleUserInteraction);
+    });
+
+    // Nettoyer les écouteurs et le timer
+    return () => {
+      events.forEach(event => {
+        document.removeEventListener(event, handleUserInteraction);
+      });
+      
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+        inactivityTimerRef.current = null;
+      }
+    };
+  }, [handleUserInteraction]);
+
+  // Effet pour surveiller la fin du chargement
+  useEffect(() => {
+    if (!loading && shiftActive) {
+      isDataLoadedRef.current = true;
+      resetInactivityTimer();
+    } else {
+      isDataLoadedRef.current = false;
+      // Nettoyer le timer si le chargement n'est pas terminé
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+        inactivityTimerRef.current = null;
+      }
+    }
+  }, [loading, shiftActive, resetInactivityTimer]);
+
+  // Nettoyer le timer quand le composant se démonte
+  useEffect(() => {
+    return () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+        inactivityTimerRef.current = null;
+      }
+    };
+  }, []);
+
   const fetchCurrentShiftStats = useCallback(async () => {
     if (!shiftActive) {
       setShiftStats(null);
@@ -91,6 +188,7 @@ function Statistiques() {
 
   useEffect(() => {
     setLoading(true);
+    isDataLoadedRef.current = false;
     fetchCurrentShiftStats();
   }, [fetchCurrentShiftStats]);
 
